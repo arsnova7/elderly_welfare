@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>노인복지론 퀴즈</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+    :root {
+        --primary: #b45309;
+        --bg-gray: #f4f6f8;
+        --success: #28a745;
+        --danger: #dc3545;
+    }
+    body { font-family: 'Pretendard', sans-serif; background-color: var(--bg-gray); margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
+    .container { width: 100%; max-width: 700px; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .header h1 { font-size: 1.8rem; color: #14213d; font-weight: 800; margin-bottom: 10px; word-break: keep-all; }
+    .header p { color: #55657d; font-weight: bold; font-size: 1.1rem; margin: 0; }
+    .header .score-text { margin-top: 6px; color: #166534; font-size: 1rem; }
+
+    .quiz-box { background: white; border-radius: 15px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .q-type { display: inline-block; background: #e0e7f1; color: #14213d; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; margin-bottom: 15px; font-weight: 700; }
+    #question-text { font-weight: bold; font-size: 1.2rem; margin-bottom: 25px; word-break: keep-all; line-height: 1.4; color: #14213d; }
+
+    .option-btn { width: 100%; text-align: left; padding: 16px; margin: 10px 0; border: 1.5px solid #e0e7f1; border-radius: 10px; background: white; cursor: pointer; font-size: 1.05rem; transition: 0.2s; line-height: 1.4; color: #2f3640; font-weight: 500; font-family: inherit; }
+    .option-btn:hover { background: #fff7ed; border-color: var(--primary); }
+    .option-btn:focus-visible, .btn-next:focus-visible, .result-btn:focus-visible { outline: 3px solid #14213d; outline-offset: 2px; }
+    .option-btn.correct { background: #e6fffa; border-color: var(--success); color: var(--success); font-weight: bold; }
+    .option-btn.wrong { background: #fff5f5; border-color: var(--danger); color: var(--danger); opacity: 0.6; }
+
+    .btn-next { width: 100%; padding: 16px; border-radius: 10px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin-top: 25px; display: none; font-size: 1.1rem; transition: 0.2s; font-family: inherit; }
+    .btn-next:hover { opacity: 0.9; transform: translateY(-2px); }
+
+    .hint-box, .exp-box { padding: 18px; border-radius: 10px; margin-top: 15px; display: none; line-height: 1.6; word-break: keep-all; font-size: 0.95rem; }
+    .hint-box { background: #fffbeb; border: 1px solid #fbd38d; color: #b45309; }
+    .exp-box { background: #f0fdf4; border: 1px solid #bbf7d0; color: #065f46; }
+
+    .result-card { background: white; border-radius: 20px; padding: 40px; text-align: center; display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+    .result-btn { width: 100%; padding: 16px; margin: 10px 0; border: 1.5px solid #e0e7f1; border-radius: 10px; background: white; cursor: pointer; font-size: 1.05rem; font-weight: bold; transition: 0.2s; font-family: inherit; }
+    .result-btn:hover { background: #f3f6fa; }
+    .result-score { margin: 6px 0 4px; font-size: 3.4rem; font-weight: 800; color: var(--primary); line-height: 1.1; }
+    .result-detail { margin: 0 0 10px; color: #55657d; line-height: 1.6; word-break: keep-all; }
+    #result-msg { margin: 0 0 18px; line-height: 1.6; word-break: keep-all; color: #14213d; font-weight: 600; }
+    .missed { text-align: left; margin: 0 0 18px; padding: 10px 16px; border: 1px solid #e0e7f1; border-radius: 10px; }
+    .missed summary { cursor: pointer; font-weight: 700; color: #14213d; padding: 4px 0; }
+    .missed ol { margin: 10px 0 4px; padding-left: 26px; font-size: 0.95rem; line-height: 1.55; word-break: keep-all; color: #2f3640; }
+    .missed li { margin-bottom: 8px; }
+
+    /* 문제 화면 아래의 목록으로 돌아가기 버튼 */
+    .list-btn { width: 100%; padding: 14px; margin-top: 16px; border: 1.5px solid #cbd5e1; border-radius: 10px; background: white; color: #14213d; font-family: inherit; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .list-btn:hover { background: #f3f6fa; }
+    .list-btn:focus-visible { outline: 3px solid #14213d; outline-offset: 2px; }
+
+    /* 데이터 검사 결과 화면 */
+    .problem-card { display: none; background: white; border-radius: 15px; padding: 28px; border-left: 6px solid var(--danger); box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .problem-card h2 { margin: 0 0 8px; font-size: 1.3rem; color: #14213d; }
+    .problem-card .summary { margin: 0 0 16px; color: #55657d; line-height: 1.6; word-break: keep-all; }
+    .problem-list { list-style: none; margin: 0 0 8px; padding: 0; }
+    .problem-list li { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid #e0e7f1; line-height: 1.5; word-break: keep-all; }
+    .problem-list .tag { flex: none; min-width: 3.2rem; font-weight: 800; color: var(--danger); }
+    .problem-list .warn .tag { color: var(--primary); }
+    .problem-card .tips { margin: 12px 0 0; padding: 14px; background: #f3f6fa; border-radius: 10px; font-size: 0.92rem; line-height: 1.6; color: #2f3640; word-break: keep-all; }
+    .problem-card .tips ul { margin: 6px 0 0; padding-left: 20px; }
+    #partial-btn { width: 100%; padding: 16px; margin-top: 16px; border: none; border-radius: 10px; background: var(--primary); color: white; font-weight: bold; font-size: 1.05rem; cursor: pointer; font-family: inherit; }
+    #partial-btn:focus-visible { outline: 3px solid #14213d; outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="container">
+    <div id="problem-screen" class="problem-card" role="alert">
+        <h2 id="problem-title"></h2>
+        <p id="problem-summary" class="summary"></p>
+        <ul id="problem-list" class="problem-list"></ul>
+        <div id="problem-tips" class="tips"></div>
+        <button id="partial-btn" type="button"></button>
+    </div>
+
+    <div id="quiz-screen">
+        <div class="header">
+            <h1 id="lecture-title"></h1>
+            <p id="progress-text"></p>
+            <p id="score-text" class="score-text"></p>
+        </div>
+        <div class="quiz-box">
+            <div id="question-type" class="q-type">개념확인</div>
+            <div id="question-text"></div>
+            <div id="options-container"></div>
+
+            <div id="hint-box" class="hint-box">💡 <b>힌트:</b> <span id="hint-text"></span></div>
+            <div id="exp-box" class="exp-box">✅ <b>정답 및 해설:</b> <span id="exp-text"></span></div>
+
+            <button id="next-btn" class="btn-next" type="button" onclick="nextQuestion()">다음 문제로</button>
+        </div>
+
+        <button class="list-btn" type="button" onclick="goList()">🏠 목록으로 돌아가기</button>
+    </div>
+
+    <div id="result-screen" class="result-card">
+        <h2 id="result-title">🎊 학습을 마쳤습니다!</h2>
+        <p id="result-score" class="result-score"></p>
+        <p id="result-detail" class="result-detail"></p>
+        <p id="result-msg"></p>
+        <details id="missed-details" class="missed">
+            <summary id="missed-summary"></summary>
+            <ol id="missed-list"></ol>
+        </details>
+        <button id="retry-missed-btn" class="result-btn" type="button" style="background:var(--primary); color:white; border:none;" onclick="retryMissed()"></button>
+        <button class="result-btn" type="button" onclick="retryAll()">🔄 처음부터 다시 풀기</button>
+        <button class="result-btn" type="button" onclick="location.href='index.html'">🏠 목록으로 돌아가기</button>
+    </div>
+</div>
+
+<!-- ① 오류 수집용: 반드시 맨 위(②, ③보다 앞)에 두세요. 수정하지 마세요. -->
+<script>
+    window.__dataErrors = [];
+    window.addEventListener('error', function (e) {
+        window.__dataErrors.push({ msg: e.message, line: e.lineno });
+    });
+</script>
+
+<!-- ② 장 설정: 새 장을 만들 때 번호(1~15)와 제목만 고치세요. -->
+<script>
+    const LECTURE = { no: 2, title: "노화 관련 이론" };
+</script>
+
+<!-- ③ 퀴즈 데이터: 노트북LM이 만든 const quizData = [...]; 를 통째로 덮어쓰세요.
+     아래 1문항은 화면 확인용 예시입니다. 덮어쓸 때 이 예시도 같이 지우세요.
+     문제마다 type, q, o, a, h, e 가 모두 있어야 하고, a는 첫 번째 보기가 0입니다. -->
+<script>
+    const quizData = [
+        {
+            "type": "개념확인",
+    "q": "다음 중 사회적 와해이론에 대한 설명으로 가장 알맞은 것은? [워크북 2장 연습문제 1번, 기말 연습문제정리 2강 Q6, 강의연습문제 2강 4번]",
+    "o": [
+      "노인에 대한 사회적 인식이 노인의 관계와활동 등에 어떻게 부정적인 영향을 주는지를 잘 설명한다.",
+      "인간은 보상을 최대화, 비용을 최소화하는 방식으로 행동한다고 전제한다.",
+      "노인은 점차 자기 자신에게 몰두해야 한다고 주장한다.",
+      "개인의 삶에서 지속성을 중요시한다."
+    ],
+    "a": 0,
+    "h": "사회적 낙인이 환류작용을 일으켜 노인의 자아개념과 활동을 약화시키는 이론입니다.",
+    "e": "사회적 와해이론(social breakdown theory)은 노인에 대해 사회적으로 규정된 부정적 인식이 환류작용을 하면서 노인을 부정적 틀에 가두고 사회적 관계와 활동을 어렵게 만든다고 설명합니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음에서 설명하는 이론은? '- 산업화로 인한 노인의 지위 하락을 설명한다. - 노인문제(예: 돌봄문제, 빈곤문제 등)의 원인을 설명하고 이해하는 데 장점이 있다. - 노인을 단일 범주의 집단으로 보며 획일적으로 지위가 낮고 역할을 상실한 존재로 설명하는 것에는 문제가 있다.' [워크북 2장 연습문제 2번, 기말 연습문제정리 2강 Q7]",
+    "o": [
+      "활동이론",
+      "현대화이론",
+      "교환이론",
+      "연령계층이론"
+    ],
+    "a": 1,
+    "h": "카우길과 홈스가 제시하였으며 산업화·도시화에 따른 노인 지위 하락을 설명하는 이론입니다.",
+    "e": "현대화이론(modernization theory)은 카우길과 홈스가 주장하였으며, 현대화(산업화, 과학기술 발전, 도시화)가 노인의 지위를 하락시키고 역할을 상실하게 만든다고 설명합니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 생애과정이론에 대한 설명으로 가장 알맞은 것은? [워크북 2장 연습문제 3번, 기말 연습문제정리 2강 Q8]",
+    "o": [
+      "생애과정의 개인이 경험하는 단편적 사건에만 초점을 둔다.",
+      "생애과정의 특별한 에피소드에만 관심을 둔다.",
+      "생애과정의 상황적 맥락에 초점을 둔다.",
+      "개인의 생애과정에 영향을 미치는 역사적 맥락은 분석에서 제외한다."
+    ],
+    "a": 2,
+    "h": "개인적 사건뿐만 아니라 역사적·사회경제적 맥락(상황적 맥락)과의 상호작용을 강조합니다.",
+    "e": "생애과정이론(life course theory)은 전 생애에 걸쳐 개인적 사건과 사회적·역사적·상황적 맥락 간의 상호작용에 초점을 맞추어 노화를 설명합니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "다음 중 비판이론에 대한 설명으로 알맞지 않은 것은? [워크북 2장 연습문제 4번]",
+    "o": [
+      "프랑크푸르트학파 중심의 사회적 변혁과 해방에 관한 이론이다.",
+      "현 체제를 부정할 뿐 대안을 제시하지 못했다는 평가를 받고 있다.",
+      "개인의 분리, 고립, 고독의 문제를 인식하지 못했다는 평가를 받고 있다.",
+      "노화에 대한 공공정책적 개입보다는 개인의 주관적·해석적 차원에 초점을 두고 이론화하였다."
+    ],
+    "a": 3,
+    "h": "비판이론은 주관적·해석적 기술보다 공공정책 개입과 같은 실제적 측면을 강조합니다.",
+    "e": "비판이론(critical theory)은 노화에 대한 개인의 주관적·해석적 차원을 기술하는 것보다는 공공정책 개입과 같은 실제적 측면을 강조하였습니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음에서 설명하는 여성주의이론은? '기존의 정치 및 사회구조를 혁파하기보다는 기존의 틀 안에서 여성주의 관점이 반영되도록 개량하는 데 초점을 둔다.' [워크북 2장 연습문제 5번, 기말 연습문제정리 2강 Q10]",
+    "o": [
+      "자유주의 여성주의",
+      "급진주의 여성주의",
+      "마르크스주의 여성주의",
+      "사회주의 여성주의"
+    ],
+    "a": 0,
+    "h": "기성 정치·사회 구조 내에서 여성의 입장을 반영하는 수정주의적 개량 태도를 보입니다.",
+    "e": "자유주의 여성주의는 기성의 정치·사회적 구조를 혁파하기보다 기존 틀 안에 여성의 입장이 반영되도록 개량하는 데 관심을 둡니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음에서 설명하는 성공적 노화 모델은? '- 경제학적 관점에서 성공적 노화 접근 - 성공적 노화를 노년기에 경험하는 상실은 최소화, 긍정적 결과는 최대화하기 위한 개인과 환경 간의 지속적인 상호작용 과정으로 파악' [기말 연습문제정리 2강 Q1, 강의연습문제 2강 1번]",
+    "o": [
+      "성공적 노화 모델",
+      "보상을 수반한 선택적 최적화 모델",
+      "성공적 통합 모델",
+      "비용을 수반한 선택적 최적화 모델"
+    ],
+    "a": 1,
+    "h": "발테스와 발테스(Baltes & Baltes)가 제시한 모델입니다.",
+    "e": "발테스와 발테스(1990)의 보상을 수반한 선택적 최적화 모델(SOC 모델)은 경제학적 관점에서 상실의 최소화와 긍정적 결과의 최대화를 위한 개인과 환경 간 상호작용으로 성공적 노화를 정의합니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "다음 중 노화이론에 대한 설명으로 가장 알맞은 것은? [기말 연습문제정리 2강 Q2]",
+    "o": [
+      "은퇴유리이론 : 모든 사람들은 최소의 비용으로 최대의 보상을 받도록 행동한다고 본다.",
+      "활동이론 : 노인들은 내부지향적 성향을 보여야 하며, 연령이 증가할수록 자기 자신에게 몰두해야 한다고 본다.",
+      "사회구성주의이론 : 연령이 갖는 사회적 의미가 어떻게 담론화되는지에 관심을 둔다.",
+      "제3기 인생론 : 사회적 활동에 참여하는 정도가 높을수록 노인의 심리적 만족도와 생활만족도가 높아진다고 주장한다."
+    ],
+    "a": 2,
+    "h": "연령의 사회적 의미와 개념이 어떻게 사회적으로 구성되고 담론화되는지에 주안점을 둡니다.",
+    "e": "사회구성주의이론은 연령이 갖는 사회적 의미가 어떻게 담론화되고 사회적 현실로 구성되는지에 관심을 둡니다. ①은 교환이론, ②는 은퇴유리이론, ④는 활동이론에 해당합니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음에서 설명하는 거시적 노화이론은? '- 사회가 계층, 젠더, 인종, 민족 등에 의해 계층화되어 있는 것처럼, 모든 사회는 청년, 중년, 노년 등 연령에 따라 사람들이 범주화되거나 계층화되어 있다고 봄 - 사회 내 자리 잡고 있는 연령차별주의를 분석하고 연령통합적 해결책을 찾는 데 유용하게 적용될 수 있음' [기말 연습문제정리 2강 Q3, 강의연습문제 2강 3번]",
+    "o": [
+      "비판이론",
+      "현대화이론",
+      "생애과정이론",
+      "연령계층이론"
+    ],
+    "a": 3,
+    "h": "라일리와 포너(Riley & Foner)가 주장한 이론입니다.",
+    "e": "연령계층이론(age stratification theory)은 모든 사회가 연령에 따라 사람들을 범주화·계층화한다고 보며 연령차별주의 분석과 연령통합에 유용합니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 노화이론에 대한 설명으로 알맞은 것은? [기말 연습문제정리 2강 Q4, 강의연습문제 2강 4번]",
+    "o": [
+      "사회적 와해이론은 낙인이론의 연장으로, 노인에 대한 사회의 부정적 인식이 환류작용을 하면서 노인이 자신을 무능한 자로 낙인하는 과정을 잘 보여준다.",
+      "제3기 인생론에서는 제4기 인생의 기간을 연장하는 것이 성공적 노화라고 본다.",
+      "사회구성주의에서는 노인을 둘러싸고 있는 거시적 사회구조적 요인에 초점을 둔다.",
+      "활동이론은 개인의 삶에서 지속성을 중시하며, 일생 동안 경험한 것과 현재 하는 활동이나 생활방식이 유사할 때 생활만족도가 높다고 주장한다."
+    ],
+    "a": 0,
+    "h": "부정적 인식의 환류작용과 무능력자 자기낙인 과정을 설명하는 낙인이론의 연장 이론을 찾으세요.",
+    "e": "사회적 와해이론은 낙인이론의 연장으로 부정적 인식이 환류작용을 하여 무능력자 낙인 과정을 보여줍니다. ①은 제4기 단축 강조, ③은 미시적 과정 강조, ④는 연속이론 설명입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음 중 거시적 노화이론에 해당되는 것은? [기말 연습문제정리 2강 Q5]",
+    "o": [
+      "교환이론",
+      "비판이론",
+      "사회구성주의이론",
+      "연속이론"
+    ],
+    "a": 1,
+    "h": "사회제도, 사회체계, 전체 사회에 초점을 두는 거시적 이론을 꼽으세요.",
+    "e": "비판이론은 자본주의 체제 비판과 거시적 구조 개입을 다루는 거시적 노화이론입니다. 교환이론, 사회구성주의이론, 연속이론은 미시적 노화이론입니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "다음 중 비판이론에 대한 설명으로 알맞지 않은 것은? [기말 연습문제정리 2강 Q9]",
+    "o": [
+      "프랑크푸르트학파가 중심이 되어 전개한 사회적 변혁과 해방에 관한 이론이다.",
+      "노화에 대한 주관적, 해석적 차원을 이론화하였다.",
+      "대표적인 학자로 카우길과 홈스가 있다.",
+      "개인의 분리, 고립, 고독의 문제를 인식하지 못했다는 평가를 받고 있다."
+    ],
+    "a": 2,
+    "h": "카우길과 홈스는 현대화이론을 주장한 학자입니다.",
+    "e": "카우길과 홈스(Cowgill & Holmes)는 현대화이론을 주장한 학자이며, 비판이론은 프랑크푸르트학파(하버마스, 무디 등)가 중심이 되었습니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음에서 설명하는 미시적 노화이론은? '- 개인의 삶에서 지속성을 중시함 - 사람들은 연령이 증가한다고 해서 극적으로 변하지 않으며, 질병에 의해 바뀌지 않는 한 성격도 전 생애를 통해 지속된다고 봄 - 일생 동안 경험한 것과 현재 하는 활동이나 생활방식이 유사할 때 생활만족도가 더 높다고 봄' [강의연습문제 2강 2번]",
+    "o": [
+      "은퇴유리이론",
+      "활동이론",
+      "사회구성주의이론",
+      "연속이론"
+    ],
+    "a": 3,
+    "h": "젊었을 때의 성격과 삶의 방식을 일관되게 유지하는 것이 만족도를 높인다고 보는 이론입니다.",
+    "e": "연속이론(continuity theory)은 개인 삶의 지속성을 강조하며 과거 경험과 현재 활동·생활방식의 유사성이 높을 때 삶의 만족도가 높다고 봅니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음 설명에 해당되는 이론은? '개인은 나이가 들어감에 따라 잃어버린 역할을 비슷한 형태의 역할로 대체하고, 전형적인 환경적응 방식을 유지하면서 일관된 행동패턴을 가지려는 성향이 있다.' [2014년 기출 3번, 2018년 기출 11번]",
+    "o": [
+      "연속이론",
+      "역할이론",
+      "생애과정이론",
+      "사회재건이론"
+    ],
+    "a": 0,
+    "h": "환경적응 방식을 유지하고 잃어버린 역할을 유사한 형태로 대체하려는 지속성 중심 이론입니다.",
+    "e": "연속이론(continuity theory)은 전형적인 환경적응 방식과 일관된 행동패턴 및 유사 역할 대체를 강조합니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음은 어떤 노화이론을 설명하는 것인가? '노인은 점차 자기 자신에게 몰두해야 하는데, 은퇴는 의무적이고 수직적 관계인 직장으로부터 자발적이고 수평적인 동년배 친구관계로 이동하게 하기 때문에 긍정적이라고 본다.' [2015년 기출 10번]",
+    "o": [
+      "활동이론",
+      "은퇴유리이론(분리이론)",
+      "연속이론",
+      "교환이론"
+    ],
+    "a": 1,
+    "h": "커밍과 헨리(Cumming & Henry)가 제시한 이론으로 사회적 역할 해제를 정상적·긍정적으로 봅니다.",
+    "e": "은퇴유리이론(disengagement theory)은 노년기에 수직적 의무 관계에서 벗어나 자기 자신에게 몰두하고 동년배 관계로 이동하는 은퇴가 보편적이고 기능적이라고 설명합니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음 중 래슬릿(Laslett)의 제3기 인생론에서 노년기에 해당하는 설명은? [2015년 기출 11번, 2017년 기출 9번]",
+    "o": [
+      "학습과 준비의 시기이다.",
+      "직업을 얻기 위해 학습을 끝내는 시기이다.",
+      "사회적 책임으로부터 비교적 자유로워지면서 자기성취를 할 수 있는 시기이다.",
+      "가정과 직장에 의무를 다하는 시기이다."
+    ],
+    "a": 2,
+    "h": "래슬릿이 구분한 제3기 인생(60~65세 이후)의 핵심 특성을 꼽으세요.",
+    "e": "래슬릿의 제3기 인생은 은퇴 후 사회적 책임에서 벗어나 건강을 바탕으로 자기성취와 자아실현을 이루는 시기입니다. ②, ③은 제1기, ④는 제2기 인생입니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 라일리와 포너(Riley & Foner)의 연령계층이론에 대한 설명으로 맞지 않는 것은? [2015년 기출 12번]",
+    "o": [
+      "연령과 사회구조 간의 관계를 분석한 이론이다.",
+      "모든 사회는 청년, 중년, 노년 등 연령에 따라 계층화되어 있다.",
+      "동일한 연령층에 속해 있는 사람들은 유사한 가치관과 태도가 형성된다.",
+      "다양한 연령층 간의 상호작용이 활발하게 이루어지는 사회는 연령분절사회이다."
+    ],
+    "a": 3,
+    "h": "다양한 연령층 간의 상호작용이 활발하고 장벽이 없는 사회는 '연령통합사회'입니다.",
+    "e": "연령층 간 상호작용이 활발하고 연령이 진입장벽이 되지 않는 사회는 '연령통합사회(age integrated society)'이며, 연령분절사회는 나이가 경직된 진입장벽이 되는 사회입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "은퇴유리이론(분리이론)에서 주장하는 노인이 경험하는 분리 유형에 해당하지 않는 것은? [2016년 기출 2번]",
+    "o": [
+      "권리적 분리",
+      "사회적 분리",
+      "심리적 분리",
+      "신체적 분리"
+    ],
+    "a": 0,
+    "h": "은퇴유리이론에서 설명하는 노화 과정의 분리 유형(신체, 심리, 사회적)이 아닌 것을 꼽으세요.",
+    "e": "분리이론(은퇴유리이론)에서는 노화 과정에서 신체적, 심리적, 사회적 분리를 다루며 '권리적 분리'라는 개념은 포함되지 않습니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "미시적 노화 이론 중 활동이론(Activity Theory)에 기반한 노인에 대한 설명으로 알맞은 것은? [2016년 기출 10번]",
+    "o": [
+      "노인은 건강상의 변화와 더불어 중년기 이후의 심리적 욕구가 감소하는 존재이다.",
+      "사회적 활동 참여도가 높을수록 심리적 만족도와 생활만족도가 높아진다.",
+      "사회적 활동 참여도는 생활만족도를 감소시킨다.",
+      "생활만족도는 노인의 인성 또는 사회경제적 지위에 의해서만 결정되며 활동과는 무관하다."
+    ],
+    "a": 1,
+    "h": "해비거스트 등의 캔자스시티 연구 결과를 떠올려 보세요.",
+    "e": "활동이론은 노인이 건강상의 변화를 제외하고는 중년기와 유사한 심리·사회적 욕구를 유지하며, 사회적 활동 참여도가 높을수록 생활만족도가 증가한다고 봅니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "미시적 노화 이론 중 다음 설명에 해당하는 이론은? '어떤 사회적 행동이 일어나기 위해서는 비용보다 보상이 더 커야 한다. 비용보다 보상이 더 큰 상황에서는 관계가 지속되지만 그렇지 못하면 관계 단절이 일어나므로, 자원을 가진 노인과 갖지 못한 노인의 지위가 차등화된다.' [2016년 기출 11번]",
+    "o": [
+      "여성주의이론",
+      "사회적 와해이론",
+      "교환이론",
+      "권력이론"
+    ],
+    "a": 2,
+    "h": "공리주의 경제학과 행동주의에 기반하여 이윤과 교환 자원 관점으로 노인 문제를 설명합니다.",
+    "e": "교환이론(exchange theory)은 보상과 비용의 경제적 이념에 기초하여 노인이 보유한 사회적 자원의 양에 따라 지위와 권력이 달라진다고 설명합니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음 중 거시적 노화이론에 해당하는 것은? [2016년 기출 12번]",
+    "o": [
+      "은퇴유리이론",
+      "사회구성주의이론",
+      "제3기 인생론",
+      "현대화이론"
+    ],
+    "a": 3,
+    "h": "미시적 인간관계가 아닌 사회제도와 체계 구조를 다루는 거시 이론을 찾으세요.",
+    "e": "현대화이론은 산업화와 사회구조 변화에 따른 노인의 지위 변화를 다루는 거시적 노화이론입니다. 은퇴유리이론, 사회구성주의이론, 제3기 인생론은 미시적 노화이론입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "연령계층이론에 대한 설명으로 올바른 것은? [2016년 기출 13번]",
+    "o": [
+      "다양한 연령층 간의 상호작용이 활발하게 이루어지는 사회를 연령통합사회라고 한다.",
+      "동일한 연령층에 속해 있다 해도 이들 간의 가치관이나 태도는 공유되지 않는다.",
+      "연령계층이론은 특정 연령층에 대한 부정적 관점을 부추긴다.",
+      "연령이 어떤 활동을 하는 데 진입장벽으로 작용하는 사회를 연령통합사회라고 한다."
+    ],
+    "a": 0,
+    "h": "연령 장벽이 없고 세대 간 상호작용이 활발한 사회의 명칭입니다.",
+    "e": "연령통합사회(age integrated society)는 나이가 진입장벽이 되지 않고 연령층 간 상호작용이 활발한 사회를 의미합니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "다음 중 거시적 노화이론에 해당하지 않는 것은? [2017년 기출 10번, 2018년 기출 12번]",
+    "o": [
+      "현대화이론",
+      "사회구성주의이론",
+      "연령계층이론",
+      "비판이론"
+    ],
+    "a": 1,
+    "h": "개인과 미시적 상호작용의 경험 해석에 초점을 맞추는 미시적 이론입니다.",
+    "e": "사회구성주의이론은 미시적 노화이론에 속하며, 현대화이론, 연령계층이론, 비판이론, 생애과정이론, 여성주의이론은 거시적 노화이론에 속합니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "다음 중 노화이론과 해당 설명이 올바르게 짝지어진 것은? [2018년 기출 13번]",
+    "o": [
+      "분리이론 - 개인의 삶에서 지속성을 강조한다.",
+      "사회적 와해이론 - 공리주의 경제학이론에 근거한 이론이다.",
+      "권리이론 - 마샬의 시민 3권을 강조하며 선배시민론의 기초가 된다.",
+      "여성주의이론 - 프랑크푸르트학파의 학자들이 중심이 된 이론이다."
+    ],
+    "a": 2,
+    "h": "마샬의 시민권(자유권, 참정권, 사회권)과 선배시민 관점의 결합을 찾으세요.",
+    "e": "권리이론은 마샬의 시민 3권(자유권, 참정권, 사회권)에 기초하여 노인을 권리 주체로 세우는 선배시민론의 기반이 됩니다. ①은 연속이론, ②는 교환이론, ④는 비판이론 설명입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "노화 관련 이론 중 다음 설명에 해당하는 개념은? '한국 사회에서 잘 늙어 간다는 것은 개인의 안녕과 행복을 넘어서 가족과 젊은 세대에 대한 배려가 있어야 한다.' [2019년 기출 4번]",
+    "o": [
+      "희망적 노화",
+      "부정적 노화",
+      "긍정적 노화",
+      "성숙한 노화"
+    ],
+    "a": 3,
+    "h": "정영숙 교수가 기존 서구 중심 성공적 노화 모델의 한계를 넘어 제시한 한국적 노화 개념입니다.",
+    "e": "정영숙(2011)은 서구의 성공적 노화가 개인주의적 행복에만 치중함을 지적하고, 주변인과의 관계와 세대 간 배려를 포함하는 '성숙한 노화(psycho-socially matured aging)' 개념을 제시했습니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "다음 중 미시적 노화이론에 해당하지 않는 것은? [2019년 기출 5번]",
+    "o": [
+      "현대화이론",
+      "은퇴유리이론",
+      "연속이론",
+      "교환이론"
+    ],
+    "a": 0,
+    "h": "산업화, 도시화, 과학기술 발전 등 거시적 사회구조적 요인을 다루는 이론입니다.",
+    "e": "현대화이론은 대표적인 거시적 노화이론이며, 은퇴유리이론, 연속이론, 교환이론, 사회적 와해이론, 사회구성주의이론, 제3기 인생론은 미시적 노화이론입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "노화(aging)의 어원이 되는 라틴어 단어로 '늙게 되는 상태'를 일컫는 말은? [교재 2장 2.1절 노화의 개념, [보충]]",
+    "o": [
+      "geron",
+      "aetas",
+      "logos",
+      "senex"
+    ],
+    "a": 1,
+    "h": "라틴어에서 나이가 들어 늙게 되는 상태를 뜻하는 어원 단어입니다.",
+    "e": "노화는 라틴어 'aetas'에서 기원된 말로, 나이가 들어 감에 따라 생식력 감퇴와 사망률 증가가 동반되는 진행성의 기능 상실을 의미합니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "스트렐러(Strehler)에 따른 생물학적 노화의 특징과 일반 질병(disease)의 차이점으로 가장 올바른 설명은? [교재 2장 2.1절 노화의 개념, [보충]]",
+    "o": [
+      "노화는 특정 개인에게만 선택적으로 일어나지만, 질병은 모든 사람에게 일어난다.",
+      "질병은 모든 사람에게 공통적으로 일어나지만, 노화는 특정 개인에게만 일어나는 현상이다.",
+      "질병은 특정 개인에게 일어나는 현상인 반면, 노화는 모든 사람에게 공통적·보편적으로 일어난다.",
+      "노화와 질병 모두 단기간에 급작스럽게 일어나는 가역적 변화이다."
+    ],
+    "a": 2,
+    "h": "노화는 누구에게나 나타나는 보편적 과정이지만, 질병은 특정 개인에게 발생하는 현상입니다.",
+    "e": "스트렐러에 따르면 질병은 어떤 특정 개인에게 발생하는 현상인 반면, 노화는 모든 사람에게 공통적으로 일어나는 보편적 과정입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "세계보건기구(WHO)의 PAH(Program on Aging and Health)에서 기대수명을 연장하기 위해 평생 신체적·사회적·정신적 안녕을 최상의 상태로 유지하는 과정으로 정의한 용어는? [교재 2장 2.1절 노화의 개념, [보충]]",
+    "o": [
+      "생산적 노화(productive aging)",
+      "우아한 노화(graceful aging)",
+      "안티에이징(anti-aging)",
+      "적극적 노화(active aging)"
+    ],
+    "a": 3,
+    "h": "WHO에서 1995년 캐나다 보건부 정의를 채택하여 발표한 긍정적 노화 개념입니다.",
+    "e": "WHO의 PAH에서는 1995년 캐나다 보건부의 노화 정의를 적용하여 기대수명 연장과 최상의 신체적·사회적·정신적 안녕을 유지하는 과정을 '적극적 노화(active aging)'로 정의했습니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "해리슨(Harrison)이 주창한 '건강한 노화(healthy aging)'에 필요한 두 가지 핵심 조건으로 가장 알맞게 짝지어진 것은? [교재 2장 2.1절 노화의 개념, [보충]]",
+    "o": [
+      "독립적인 건강한 생활 영위, 정서적 안녕",
+      "막대한 재산 축적, 경제적 독점",
+      "완전한 질병 소멸, 신체적 민첩성 유지",
+      "자녀와의 동거, 사회적 역할의 완벽한 승계"
+    ],
+    "a": 0,
+    "h": "단순 수명 연장이 아니라 독립적 생활과 정서적 안녕의 동반을 강조했습니다.",
+    "e": "해리슨(Harrison, 2006)은 건강한 노화를 위해 단순한 수명 연장을 넘어 독립적으로 건강한 생활을 영위하는 것과 정서적 안녕이 동반되어야 한다고 주장했습니다."
+  },
+  {
+    "type": "사례적용",
+    "q": "오키나와의 100세 노인들을 분석한 연구(Willcox et al.)에서 노인이 우아하게 노화(graceful aging)되기 위해 90대 내내 높은 상태로 유지되어야 한다고 밝힌 기능이 아닌 것은? [교재 2장 2.1절 노화의 개념, [보충]]",
+    "o": [
+      "신체 기능",
+      "노동 생존 기능",
+      "감각 기능",
+      "인지 기능"
+    ],
+    "a": 1,
+    "h": "오키나와 백세 노인 연구에서 우아한 노화를 위해 유지되어야 한다고 본 3대 기능(신체, 감각, 인지)을 떠올려 보세요.",
+    "e": "Willcox 등의 연구에 따르면 한 인간이 우아하게 노화되기 위해서는 신체, 감각, 인지 기능이 90대 내내 높은 상태로 유지되어야 함을 밝혔습니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "노화에 대하여 성숙한 태도를 보일수록 나타나는 삶의 특성에 대한 연구결과(안정신 외)로 올바르지 않은 것은? [교재 2장 2.1절 노화의 개념, [보충]]",
+    "o": [
+      "일상생활 동작 수행 능력이 높다.",
+      "자아통합감, 초월성, 지혜가 높게 나타난다.",
+      "자신의 이익만을 생각하는 자기중심적 태도가 급격히 강해진다.",
+      "자녀에게 누를 끼치지 않고 욕심을 부리지 않는 태도를 보인다."
+    ],
+    "a": 2,
+    "h": "성숙한 노화 태도는 상대방을 이해·배려하며 현재 소유에 만족하는 특성을 띱니다.",
+    "e": "안정신 등의 연구에서 성숙한 노화 태도를 보이는 노인은 자녀에게 누를 끼치지 않고, 욕심을 부리지 않으며, 자기중심적으로 생각하지 않고 배려하는 태도를 나타내어 자아통합감과 지혜가 높은 것으로 밝혀졌습니다."
+  },
+  {
+    "type": "사례적용",
+    "q": "노년기에 대가 피아니스트 루빈스타인이 손의 신체적 쇠퇴에 맞추어 연주곡 수를 줄이고(선택), 선택한 곡을 더 집중 연습하며(최적화), 빠른 템포 직전 구절을 더 천천히 연주하여 상대적으로 빠르게 느끼게 한(보상) 행동 사례는 어떤 성공적 노화 모델로 설명할 수 있는가? [강의록 2장, [보충]]",
+    "o": [
+      "로웨와 칸의 성공적 노화 모델",
+      "커밍과 헨리의 은퇴유리이론",
+      "쿠이퍼스와 벵트손의 사회적 와해이론",
+      "발테스와 발테스의 보상을 수반한 선택적 최적화 모델(SOC 모형)"
+    ],
+    "a": 3,
+    "h": "상실을 최소화하고 긍정적 결과를 최대화하기 위한 경제학적 선택·최적화·보상 전략입니다.",
+    "e": "루빈스타인이 연주곡 수를 줄이고(선택), 연습을 늘리며(최적화), 템포 조절을 한 사례(보상)는 발테스와 발테스(Baltes & Baltes)의 SOC 모델을 보여주는 대표적 사례입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "로웨와 칸(Rowe & Kahn)이 제시한 성공적 노화의 3가지 핵심 요소에 해당하지 않는 것은? [교재 2장 2.2절 성공적 노화, [보충]]",
+    "o": [
+      "막대한 사적 재산 보유 및 권력 행사",
+      "질병과 장애가 없음",
+      "인지적 기능과 신체적 기능의 유지",
+      "적극적인 삶에의 참여"
+    ],
+    "a": 0,
+    "h": "로웨와 칸은 활동이론에 입각하여 질병·장애 부재, 기능 유지, 적극적 참여 3가지를 제시했습니다.",
+    "e": "로웨와 칸(1998)은 질병 및 장애의 부재, 신체적·인지적 기능 유지, 적극적인 삶의 참여(인간관계 및 생산적 활동)를 성공적 노화의 3대 요소로 규정했습니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "로웨와 칸의 성공적 노화 모델과 발테스와 발테스의 SOC 모델이 한국 노인들에게 그대로 적용되기 어렵다고 지적받는 주요 한계점은? [교재 2장 2.2절 성공적 노화, [보충]]",
+    "o": [
+      "신체적 기능 유지를 완전히 무시하고 오직 주관적 기분만 강조한다.",
+      "개인주의적 가치관에 입각하여 한국 노인이 중시하는 가족관계 등 집단주의적·문화적 특성을 반영하지 못한다.",
+      "서구 노인들에게조차 실증적으로 검증된 적이 전혀 없다.",
+      "노인의 생산성과 경제활동 참여를 지나치게 억제한다."
+    ],
+    "a": 1,
+    "h": "서구의 개인주의적 안녕 중심 연구가 한국 노인의 가족 관계와 공동체 배려 문화를 담지 못한다는 비판입니다.",
+    "e": "안정신(2011)과 정영숙(2011) 등은 서구의 모델들이 개인주의적 안녕에 초점을 두어 한국 노인이 중요시하는 가족관계나 세대 간 배려 등 문화적 차이를 반영하지 못한다고 비판했습니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "노화 관련 이론을 세 가지 분류 기준에 따라 구분할 때, 이에 해당하지 않는 분류 체계는? [교재 2장 2.3절 노화 관련 이론, [보충]]",
+    "o": [
+      "1세대, 2세대, 3세대 이론으로의 분류",
+      "사회학의 이론적 관점(구조기능주의, 갈등론, 상징적 상호작용론, 교환이론)에 따른 분류",
+      "동물학적 분류와 식물학적 분류",
+      "미시적 노화이론과 거시적 노화이론으로의 분류"
+    ],
+    "a": 2,
+    "h": "교재에서 제시한 노화이론의 3가지 분류 기준(세대별, 사회학 관점별, 미시/거시별)을 확인하세요.",
+    "e": "교재에서는 노화 관련 이론을 ① 1/2/3세대 이론, ② 사회학적 관점(구조기능론, 갈등론, 상징적 상호작용론, 교환이론), ③ 미시 및 거시 분류체계의 3가지 기준으로 구분합니다."
+  },
+  {
+    "type": "이론·학자",
+    "q": "핸드릭스(Hendricks)가 노화 이론의 발전 과정을 변증법적 발달 과정으로 분류할 때 사용한 '정-반-합'의 전개 설명으로 올바른 것은? [강의록 2장, [보충]]",
+    "o": [
+      "사회구조만 강조한 이론(정) → 개인 성격만 강조한 이론(반) → 생물학적 이론(합)",
+      "생물학적 노화(정) → 심리적 노화(반) → 사회적 노화(합)",
+      "미시적 이론(정) → 거시적 이론(반) → 자연과학적 이론(합)",
+      "초기 개인에 초점을 둔 이론(정) → 사회구조를 강조한 이론(반) → 개인과 사회구조의 상호작용을 통합한 이론(합)"
+    ],
+    "a": 3,
+    "h": "개인 요소 중심에서 사회구조 비판을 거쳐 개인과 구조의 통합으로 전개되었습니다.",
+    "e": "핸드릭스는 변증법적 발달 과정에서 개인 중심(정)에서 사회구조 강조(반)를 거쳐 개인과 구조의 역동적 상호작용을 보는 통합 이론(합)으로 노화 이론이 발전하였다고 설명했습니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "유성호 외(2002)와 벵트손(Bengtson)이 제시한 노화 이론의 세대별 구분에 대한 설명으로 가장 올바른 것은? [교재 2장 2.3절 노화 관련 이론, [보충]]",
+    "o": [
+      "1세대 이론은 주로 개인적 요소에 초점을 맞추며 구조기능주의와 상징적 상호작용론에 기초한다.",
+      "1세대 이론은 주로 사회구조적 측면에만 초점을 맞추어 노화를 설명한다.",
+      "2세대 이론은 개인적 요소와 구조적 측면을 완벽히 통합한 3세대 종합이론이다.",
+      "3세대 이론은 1950년대 이전에 완성되어 현재는 전혀 쓰이지 않는다."
+    ],
+    "a": 0,
+    "h": "1세대는 개인적 요소 중심, 2세대는 사회구조 중심, 3세대는 개인과 구조의 통합을 지향합니다.",
+    "e": "1세대 이론(1970년대 이전)은 주로 개인적 요소에 초점을 두며 구조기능주의와 상징적 상호작용론에 기초하고, 2세대는 사회구조적 측면, 3세대는 종합·통합을 지향합니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "노박(Novak)의 미시적 노화이론과 거시적 노화이론 구분 기준으로 알맞은 설명은? [교재 2장 2.3절 노화 관련 이론, [보충]]",
+    "o": [
+      "미시적 이론은 국가 정책과 조세 제도에 초점을 두고, 거시적 이론은 개별 노인의 성격에 초점을 둔다.",
+      "미시적 이론은 사람과 사람 사이의 관계에 초점을 두고, 거시적 이론은 사회제도·체계·전체 사회에 초점을 둔다.",
+      "미시적 이론은 80세 이상 노인만 연구하고, 거시적 이론은 60대 노인만 연구한다.",
+      "미시적 이론과 거시적 이론은 분류 기준에 차이가 없으며 완전히 동일하다."
+    ],
+    "a": 1,
+    "h": "미시는 사람 간의 대인관계 및 상호작용, 거시는 사회제도와 체계 전체에 중점을 둡니다.",
+    "e": "미시적 노화이론은 사람과 사람 사이의 관계(대인관계, 미시체계)를 강조하며, 거시적 노화이론은 사회제도, 사회체계, 전체 사회 구조에 초점을 둡니다."
+  },
+  {
+    "type": "이론·학자",
+    "q": "로버트 해비거스트(Robert Havighurst)가 활동이론을 발전시키는 토대가 된 대표적 연구 대상과 연구 기법은? [교재 2장 2.3절 노화 관련 이론, [보충]]",
+    "o": [
+      "오키나와 장수 노인을 대상으로 한 단면 연구",
+      "서울 거주 독거노인 1,000명을 대상으로 한 설문 조사",
+      "캔자스시티 성인 300명(50~90세 성인)을 대상으로 한 6년 간의 주기적 인터뷰 종단연구",
+      "뉴욕의 무직 노인들을 대상으로 한 행동 실험"
+    ],
+    "a": 2,
+    "h": "캔자스시티 성인 대상 6년 종단 인터뷰 연구 결과를 바탕으로 활동이론을 전개했습니다.",
+    "e": "해비거스트는 캔자스시티에 거주하는 50~90세 성인 300명을 대상으로 6년간 주기적 인터뷰를 진행한 연구에 기초하여 활동이론을 발전시켰습니다."
+  },
+  {
+    "type": "이론·학자",
+    "q": "상징적 상호작용 관점에 입각하여 활동이론을 정교화하였으며, '활동은 개인이 자아개념을 재확인하는 데 필요한 역할을 한다'고 주장한 학자는? [교재 2장 2.3절 노화 관련 이론, [보충]]",
+    "o": [
+      "카우길과 홈스(Cowgill & Holmes)",
+      "프랑크푸르트학파",
+      "마틴(Martin)",
+      "레먼과 그의 동료들(Lemon et al., 1972)"
+    ],
+    "a": 3,
+    "h": "상징적 상호작용론을 도입하여 타인과의 상호작용과 자아개념 재확인으로서의 활동을 정교화했습니다.",
+    "e": "레먼 등(Lemon et al., 1972)은 상징적 상호작용 관점에서 활동이 개인이 자아개념을 재확인하고 긍정적 생활만족도로 연결되는 매개체임을 정교화하였습니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "다음 중 활동이론(activity theory)이 받는 대표적인 비판 내용으로 올바른 것은? [교재 2장 2.3절 노화 관련 이론, [보충]]",
+    "o": [
+      "노인 개인의 인성, 사회경제적 지위, 생활방식 차이를 간과하고 미국 사회 외 타 문화권에 항상 적용되는 것은 아니라는 비판",
+      "노인이 사회에서 완전히 분리되는 것만을 정상으로 강요한다는 비판",
+      "자본주의 지배 종속 체제를 지나치게 혁명적으로 비판한다는 평가",
+      "개인의 대인관계를 완전히 무시하고 오직 국가 세제만 다룬다는 평가"
+    ],
+    "a": 0,
+    "h": "생산성과 노동 가치를 강조하는 미국 문화 외 타 문화권 적용 한계와 개인차 간과가 비판점입니다.",
+    "e": "활동이론은 개인이 처한 상황·인성·생활방식에 따른 차이를 간과하고, 노동과 생산성을 강조하는 미국 사회 외의 다른 문화권에 보편적으로 적용하기 어렵다는 비판을 받습니다."
+  },
+  {
+    "type": "사례적용",
+    "q": "교환이론을 노인의 지위에 처음 적용한 마틴(Martin)의 연구 결과에 따르면, 노인 문제의 발생 원인은 무엇인가? [교재 2장 2.3절 노화 관련 이론, [보충]]",
+    "o": [
+      "노인이 유동성 지능을 지나치게 높게 유지하기 때문",
+      "노인이 돈이나 사회적 자원을 상실하거나 갖지 못해 가족·친척에게 의존적이거나 소외된 지위에 처하기 때문",
+      "국가가 노인에게 과도한 조세를 부과하기 때문",
+      "노인이 지나치게 비판이론적 시각을 갖고 사회운동에 참여하기 때문"
+    ],
+    "a": 1,
+    "h": "교환 자원(돈, 사회적 자원)의 유무가 노인의 지배권/의존성 및 소외를 결정한다는 설명입니다.",
+    "e": "마틴(Martin, 1971)은 교환 자원(돈, 지위 자원 등)을 가진 노인은 권력을 행사하지만, 자원이 부족한 노인은 의존적 지위와 소외를 감수하게 되며 이것이 노인문제의 원인이 된다고 보았습니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "사회적 와해이론의 기저가 되는 '낙인이론(labeling theory)'의 두 가지 핵심 명제에 내포된 의미로 올바른 설명은? [교재 2장 2.3절 노화 관련 이론, [보충]]",
+    "o": [
+      "범죄나 일탈은 개인의 유전적 결함에서만 원인이 비롯된다.",
+      "낙인은 한 번 찍히면 개인에게 아무런 심리적 영향을 주지 않는다.",
+      "사회통제와 사회적 처벌 과정이 일탈자를 만들어내며, 낙인이 행위자의 자아개념을 훼손하여 이차적 일탈을 유발한다.",
+      "모든 법 위반자는 조사나 재판 없이 자동으로 일탈자가 된다."
+    ],
+    "a": 2,
+    "h": "사회통제 자체가 일탈을 발생시키고 낙인이 부정적 자아개념과 2차 일탈을 초래한다는 명제입니다.",
+    "e": "낙인이론은 사회적 통제·처벌 과정에서 비로소 범죄자로 규정되며, 낙인이 찍힌 개인은 부정적 자아개념을 내면화하여 '이차적 일탈'로 나아간다고 봅니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "사회구성주의이론(social constructionist theory)의 관점에서 노화와 노인을 바라보는 시각으로 가장 알맞은 것은? [교재 2장 2.3절 노화 관련 이론, [보충]]",
+    "o": [
+      "노인을 수동적인 객체로 다루고 사회 구조에 의해 일방적으로 결정되는 존재로 본다.",
+      "연령의 사회적 의미나 담론화 과정에는 전혀 관심을 두지 않는다.",
+      "거시적 자본주의 경제 구조만을 유일한 분석 대상으로 삼는다.",
+      "노화에 대한 부정적·획일적 개념을 해체하며, 노인을 사회적 세계 구성에 참여하는 적극적 주체로 본다."
+    ],
+    "a": 3,
+    "h": "사회적 현실은 구성원들에 의해 구성되므로 노인을 적극적 주체로 봅니다.",
+    "e": "사회구성주의이론은 연령의 사회적 의미가 담론화되는 과정에 주목하며, 노인을 수동적 객체가 아닌 사회적 세계 구성에 참여하는 적극적 주체로 인식합니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "영국의 인구학자 래슬릿(Laslett)이 구획한 인생의 4단계에 대한 설명 중 잘못 연결된 것은? [교재 2장 2.3절 노화 관련 이론, [보충]]",
+    "o": [
+      "제4기 인생: 사회적 활동성이 최고조에 달하며 정치적 지배력을 행사하는 시기",
+      "제1기 인생: 출생부터 학습을 끝내고 준비하는 시기(0~25세)",
+      "제2기 인생: 취업, 독립, 결혼, 가정과 직장의 의무를 다하는 시기(25~60/65세)",
+      "제3기 인생: 은퇴 후 사회적 책임에서 벗어나 자기성취를 이루는 시기(60/65~75/80세)"
+    ],
+    "a": 0,
+    "h": "제4기 인생은 신체적·정신적으로 약해져 의존하며 죽음에 임하는 시기입니다.",
+    "e": "제4기 인생은 신체적·정신적으로 약해지면서 다른 사람에게 의존하며 죽음에 이르는 시기이므로, 래슬릿은 이 시기를 단축하고 제3기 인생을 성공적으로 계획하는 것이 중요하다고 보았습니다."
+  },
+  {
+    "type": "이론·학자",
+    "q": "라일리와 포너(Riley & Foner)의 연령계층이론(age stratification theory)에서 전제하는 '연령 코호트(cohort)'의 주요 특성은? [교재 2장 2.3절 노화 관련 이론, [보충]]",
+    "o": [
+      "동일 연령층 내부의 사람들은 역사적 사건에 대해 완전히 상반된 반응만 보인다.",
+      "동일한 연령층에 속한 사람들은 유사한 시대적 경험을 공유하므로 가치관이나 태도가 유사하게 형성된다.",
+      "연령은 계층, 젠더, 인종과 달리 사회적 계층화 요소로 작용할 수 없다.",
+      "연령층이 다르면 시대적 경험과 무관하게 항상 가치관이 일치한다."
+    ],
+    "a": 1,
+    "h": "동일 연령층이 같은 시대적 경험을 공유하면서 형성하는 유사 태도를 전제로 합니다.",
+    "e": "연령계층이론은 사회가 연령에 의해 계층화되며, 동일 연령 코호트에 속한 이들이 유사한 역사적·시대적 경험을 공유하여 유사 가치관을 형성한다고 봅니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "콜(Kohl)이 제시한 '삶의 연대기화(chronologization)' 및 '생애주기의 제도화' 개념을 극복하고, 전 생애에 걸쳐 교육, 노동, 여가를 자율적으로 선택하도록 촉진하는 사회 모델은? [교재 2장 2.3절 노화 관련 이론, [보충]]",
+    "o": [
+      "연령분절사회",
+      "연령차별사회",
+      "연령통합사회",
+      "연령격리사회"
+    ],
+    "a": 2,
+    "h": "연령이 장벽이 되지 않고 생애주기의 유연화를 이루는 사회입니다.",
+    "e": "연령통합사회는 연령이 장벽이 되지 않고 세대 간 상호작용이 활발한 사회로, 삶의 연대기화나 생애주기 제도화에서 벗어나 전 생애에 걸친 교육·노동·여가의 균형을 강조합니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "여성주의이론에서 제시하는 다양한 파파 중, '개인적인 것은 정치적인 것'이라는 슬로건 아래 가사노동, 육아, 이성애 등 가부장제 제도의 근본적 변혁을 통한 여성해방을 주장하는 학파는? [교재 2장 2.3절 노화 관련 이론, [보충]]",
+    "o": [
+      "자유주의 여성주의",
+      "마르크스주의 여성주의",
+      "신자유주의 여성주의",
+      "급진주의 여성주의"
+    ],
+    "a": 3,
+    "h": "가부장제 문화와 출산·양육 성역할의 근본적 변혁을 주장하는 학파입니다.",
+    "e": "급진주의 여성주의는 '개인적인 것은 정치적인 것'이라는 슬로건을 바탕으로 가부장제와 생물학적 성역할(출산, 양육 등)에 대한 근본적 변혁을 통해 여성해방을 추구합니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "사회주의 여성주의(socialist feminism)가 여성 문제의 원인과 해결책을 바라보는 시각으로 가장 알맞은 것은? [교재 2장 2.3절 노화 관련 이론, [보충]]",
+    "o": [
+      "여성 문제는 자본주의 경제체제와 가부장제도 모두에서 기인하므로 성차별과 계급차별을 통합하여 해석한다.",
+      "여성 문제는 오직 개인의 게으름 때문이므로 시장 자유 경쟁으로 해결해야 한다.",
+      "생물학적 원인만 다루고 경제적 요인은 완전히 무시한다.",
+      "기존 정치 구조 개량을 거부하고 오직 법적 조항 하나만 수정하고자 한다."
+    ],
+    "a": 0,
+    "h": "마르크스주의의 자본주의 계급 억압 분석과 급진주의의 가부장제 억압 분석을 통합하였습니다.",
+    "e": "사회주의 여성주의는 여성 문제의 주체를 남성과 자본가로 상정하며, 자본주의 경제체제와 가부장제의 통합적 억압 구조에서 성차별과 계급차별을 함께 해석합니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "노화 관련 이론을 사회학의 4대 이론적 관점으로 분류할 때, 주로 1세대 노화이론(활동이론, 은퇴유리이론 등)의 기초가 된 두 가지 대표적 사회학 관점은? [교재 2장 2.3절 노화 관련 이론, [보충]]",
+    "o": [
+      "갈등론, 마르크스주의",
+      "구조기능주의, 상징적 상호작용론",
+      "교환이론, 비판이론",
+      "여성주의, 해체주의"
+    ],
+    "a": 1,
+    "h": "1세대 미시/사회적 노화이론은 규범적 기능 수행과 대인간 상징적 상호작용에 기반을 두었습니다.",
+    "e": "유성호 외(2002)에 따르면 1세대 노화이론은 주로 사회학의 구조기능주의와 상징적 상호작용론에 기초하여 발전하였습니다."
+        }
+    ];</script>
+
+<!-- ④ 프로그램 본체: 수정하지 마세요. -->
+<script>
+    var allQuestions = [];   // 검사를 통과한 전체 문제
+    var questions = [];      // 지금 풀고 있는 문제 묶음(전체 또는 틀린 문제)
+    var curIdx = 0;
+    var wrongCount = 0;      // 현재 문제에서 틀린 횟수
+    var correctFirst = 0;    // 이번 회차에서 한 번에 맞힌 문제 수
+    var missed = [];         // 이번 회차에서 한 번이라도 틀린 문제
+
+    document.title = '노인복지론 퀴즈 [제' + LECTURE.no + '장]';
+    document.getElementById('lecture-title').textContent = '제' + LECTURE.no + '장: ' + LECTURE.title;
+
+    /* ---------- 데이터 검사 ---------- */
+    function validateQuizData(data) {
+        var errors = [];
+        var warnings = [];
+        var valid = [];
+
+        if (!Array.isArray(data) || data.length === 0) {
+            errors.push({ tag: '전체', text: 'quizData가 비어 있거나 배열([ ])이 아닙니다.' });
+            return { errors: errors, warnings: warnings, valid: valid };
+        }
+
+        data.forEach(function (item, i) {
+            var tag = 'Q' + (i + 1);
+            var problems = [];
+
+            if (!item || typeof item !== 'object') {
+                problems.push('문제가 { } 형식이 아닙니다.');
+            } else {
+                if (typeof item.q !== 'string' || !item.q.trim()) {
+                    problems.push('q(질문)가 없거나 비어 있습니다.');
+                }
+
+                var oOk = Array.isArray(item.o);
+                if (!oOk) {
+                    problems.push('o(보기)가 배열([ ])이 아닙니다.');
+                } else {
+                    if (item.o.length < 2) {
+                        problems.push('보기가 ' + item.o.length + '개뿐입니다. 2개 이상 필요합니다.');
+                    }
+                    var bad = item.o.some(function (x) { return typeof x !== 'string' || !x.trim(); });
+                    if (bad) {
+                        problems.push('보기 중에 비어 있거나 글자가 아닌 항목이 있습니다.');
+                    } else {
+                        var uniq = {};
+                        item.o.forEach(function (x) { uniq[x.trim()] = true; });
+                        if (Object.keys(uniq).length !== item.o.length) {
+                            problems.push('똑같은 보기가 2개 이상 있습니다.');
+                        }
+                    }
+                }
+
+                if (typeof item.a === 'string') {
+                    problems.push('a(정답 번호)가 따옴표로 감싸져 있습니다("' + item.a + '"). 따옴표 없는 숫자로 바꾸세요.');
+                } else if (!Number.isInteger(item.a)) {
+                    problems.push('a(정답 번호)가 없거나 숫자가 아닙니다.');
+                } else if (oOk && (item.a < 0 || item.a >= item.o.length)) {
+                    if (item.a === item.o.length) {
+                        problems.push('a가 ' + item.a + '입니다. 번호는 0부터 세므로 보기가 ' + item.o.length + '개면 0~' + (item.o.length - 1) + ' 중 하나여야 합니다. 1부터 센 것 같아요(' + item.a + ' → ' + (item.a - 1) + ').');
+                    } else {
+                        problems.push('a가 ' + item.a + '로 보기 범위(0~' + (item.o.length - 1) + ')를 벗어났습니다.');
+                    }
+                }
+
+                if (typeof item.h !== 'string' || !item.h.trim()) {
+                    problems.push('h(힌트)가 없거나 비어 있습니다.');
+                }
+                if (typeof item.e !== 'string' || !item.e.trim()) {
+                    problems.push('e(해설)가 없거나 비어 있습니다.');
+                }
+            }
+
+            if (problems.length) {
+                problems.forEach(function (t) { errors.push({ tag: tag, text: t }); });
+            } else {
+                valid.push(item);
+            }
+        });
+
+        
+
+        return { errors: errors, warnings: warnings, valid: valid };
+    }
+
+    /* ---------- 검사 결과 화면 ---------- */
+    function showProblemScreen(opts) {
+        document.getElementById('quiz-screen').style.display = 'none';
+        document.getElementById('problem-screen').style.display = 'block';
+        document.getElementById('problem-title').textContent = opts.title;
+        document.getElementById('problem-summary').textContent = opts.summary;
+
+        var list = document.getElementById('problem-list');
+        list.innerHTML = '';
+        opts.items.forEach(function (it) {
+            var li = document.createElement('li');
+            if (it.warn) li.className = 'warn';
+            var tag = document.createElement('span');
+            tag.className = 'tag';
+            tag.textContent = it.tag;
+            var txt = document.createElement('span');
+            txt.textContent = it.text;
+            li.appendChild(tag);
+            li.appendChild(txt);
+            list.appendChild(li);
+        });
+
+        var tips = document.getElementById('problem-tips');
+        tips.innerHTML = '';
+        if (opts.tips && opts.tips.length) {
+            tips.appendChild(document.createTextNode('자주 생기는 원인'));
+            var ul = document.createElement('ul');
+            opts.tips.forEach(function (t) {
+                var li = document.createElement('li');
+                li.textContent = t;
+                ul.appendChild(li);
+            });
+            tips.appendChild(ul);
+            tips.style.display = 'block';
+        } else {
+            tips.style.display = 'none';
+        }
+
+        var btn = document.getElementById('partial-btn');
+        if (opts.buttonText) {
+            btn.textContent = opts.buttonText;
+            btn.style.display = 'block';
+            btn.onclick = opts.onButton;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    function startQuiz(list) {
+        allQuestions = list;
+        document.getElementById('problem-screen').style.display = 'none';
+        beginRound(list);
+    }
+
+    // 한 회차 시작: 전체 문제 또는 틀린 문제만 받아서 처음부터 진행
+    function beginRound(list) {
+        questions = list;
+        curIdx = 0;
+        correctFirst = 0;
+        missed = [];
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('quiz-screen').style.display = 'block';
+        loadQuestion();
+    }
+
+    function init() {
+        // 데이터 문법 오류: ③ 블록이 아예 실행되지 못한 경우
+        if (typeof quizData === 'undefined') {
+            var items = window.__dataErrors.map(function (er) {
+                return { tag: er.line ? ('약 ' + er.line + '줄') : '오류', text: er.msg };
+            });
+            if (!items.length) items.push({ tag: '오류', text: 'quizData를 찾을 수 없습니다. const quizData = [ ... ]; 형태가 맞는지 확인하세요.' });
+            showProblemScreen({
+                title: '⚠️ 퀴즈 데이터를 읽지 못했어요',
+                summary: '데이터 부분에 문법 오류가 있어서 프로그램이 멈췄습니다. 아래 줄 근처를 확인하세요.',
+                items: items,
+                tips: [
+                    '문장 안에 큰따옴표(")가 들어 있음 → 작은따옴표(\')로 바꾸기',
+                    '문제와 문제 사이 쉼표(,) 빠짐, 또는 맨 끝의 ]; 가 지워짐',
+                    '문장 한가운데에서 줄이 바뀜 (한 문장은 한 줄로)',
+                    '붙여넣은 글에 // 가 포함되어 뒷부분이 주석 처리됨'
+                ]
+            });
+            return;
+        }
+
+        var result = validateQuizData(quizData);
+
+        if (result.errors.length === 0 && result.warnings.length === 0) {
+            startQuiz(result.valid);
+            return;
+        }
+
+        var items = result.errors.map(function (er) { return { tag: er.tag, text: er.text }; })
+            .concat(result.warnings.map(function (w) { return { tag: w.tag, text: w.text, warn: true }; }));
+
+        var badCount = (Array.isArray(quizData) ? quizData.length : 0) - result.valid.length;
+        var hasErrors = result.errors.length > 0;
+
+        showProblemScreen({
+            title: hasErrors ? '⚠️ 고칠 곳이 ' + result.errors.length + '군데 있어요' : '확인해 볼 곳이 있어요',
+            summary: !hasErrors
+                ? '오류는 아니지만 한 번 확인해 보세요.'
+                : (badCount > 0
+                    ? '전체 ' + quizData.length + '문제 중 ' + badCount + '문제에 문제가 있습니다. 데이터를 고치고 새로고침하세요.'
+                    : '퀴즈 데이터를 확인하고 새로고침하세요.'),
+            items: items,
+            tips: hasErrors ? [
+                '정답 번호 a는 따옴표 없는 숫자이고, 첫 번째 보기가 0입니다',
+                '문제마다 type, q, o, a, h, e 가 모두 있어야 합니다'
+            ] : null,
+            buttonText: result.valid.length > 0
+                ? (hasErrors ? '오류 없는 ' + result.valid.length + '문제만 먼저 풀기' : '그대로 시작하기')
+                : null,
+            onButton: function () { startQuiz(result.valid); }
+        });
+    }
+
+    /* ---------- 퀴즈 진행 ---------- */
+    function loadQuestion() {
+        wrongCount = 0;
+        var q = questions[curIdx];
+
+        document.getElementById('progress-text').textContent = (curIdx + 1) + ' / ' + questions.length;
+        updateScore();
+        window.scrollTo(0, 0);
+        document.getElementById('question-type').textContent = q.type || '일반문제';
+        document.getElementById('question-text').textContent = 'Q' + (allQuestions.indexOf(q) + 1) + '. ' + q.q;
+
+        var container = document.getElementById('options-container');
+        container.innerHTML = '';
+        q.o.forEach(function (opt, idx) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'option-btn';
+            btn.textContent = opt;
+            btn.onclick = function () { checkAnswer(idx, btn); };
+            container.appendChild(btn);
+        });
+
+        document.getElementById('hint-box').style.display = 'none';
+        document.getElementById('exp-box').style.display = 'none';
+        document.getElementById('next-btn').style.display = 'none';
+    }
+
+    function checkAnswer(idx, btn) {
+        var q = questions[curIdx];
+        var allBtns = document.querySelectorAll('.option-btn');
+
+        if (idx === q.a) {
+            btn.classList.add('correct');
+            allBtns.forEach(function (b) { b.style.pointerEvents = 'none'; });
+            if (wrongCount === 0) { correctFirst++; updateScore(); }
+            showExplanation();
+        } else {
+            wrongCount++;
+            if (wrongCount === 1) missed.push(q);
+            btn.classList.add('wrong');
+            btn.style.pointerEvents = 'none';
+
+            if (wrongCount === 1) {
+                document.getElementById('hint-text').textContent = q.h;
+                document.getElementById('hint-box').style.display = 'block';
+            } else {
+                allBtns[q.a].classList.add('correct');
+                allBtns.forEach(function (b) { b.style.pointerEvents = 'none'; });
+                showExplanation();
+            }
+        }
+    }
+
+    function showExplanation() {
+        var q = questions[curIdx];
+        document.getElementById('exp-text').textContent = q.e;
+        document.getElementById('exp-box').style.display = 'block';
+        document.getElementById('next-btn').style.display = 'block';
+    }
+
+    // 풀던 중에 누르면 한 번 물어봅니다. (묻지 않으려면 if 문 세 줄을 지우세요)
+    function goList() {
+        if (curIdx > 0 && !confirm('퀴즈를 그만하고 목록으로 갈까요?\n지금까지 푼 기록은 저장되지 않아요.')) return;
+        location.href = 'index.html';
+    }
+
+    function nextQuestion() {
+        curIdx++;
+        if (curIdx < questions.length) {
+            loadQuestion();
+        } else {
+            showResult();
+        }
+    }
+
+    /* ---------- 점수와 다시 풀기 ---------- */
+    // 한 번에 맞힌 문제만 점수로 셉니다. (힌트를 본 뒤 맞히면 점수에 넣지 않아요)
+    function updateScore() {
+        document.getElementById('score-text').textContent = '한 번에 맞힌 문제 ' + correctFirst + '개';
+    }
+
+    function showResult() {
+        var total = questions.length;
+        var score = Math.round(correctFirst / total * 100);
+        var isRetry = total < allQuestions.length;
+
+        document.getElementById('quiz-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+
+        document.getElementById('result-title').textContent = isRetry ? '🔁 틀린 문제 복습을 마쳤습니다!' : '🎊 학습을 마쳤습니다!';
+        document.getElementById('result-score').textContent = score + '점';
+        document.getElementById('result-detail').textContent =
+            (isRetry ? '복습한 ' : '전체 ') + total + '문제 중 한 번에 맞힌 문제 ' + correctFirst + '개 (100점 만점)';
+
+        var msg;
+        if (score >= 90) msg = '진짜 수고 많이 하셨습니다, 학우님! A+ 당근 🥕';
+        else if (score >= 70) msg = '잘하고 계세요! 틀린 문제만 한 번 더 풀면 더 단단해져요.';
+        else msg = '괜찮아요. 틀린 문제를 해설과 함께 다시 풀어 보면 금방 늘어요.';
+        document.getElementById('result-msg').textContent = msg;
+
+        var details = document.getElementById('missed-details');
+        var list = document.getElementById('missed-list');
+        list.innerHTML = '';
+        missed.forEach(function (m) {
+            var li = document.createElement('li');
+            li.value = allQuestions.indexOf(m) + 1;
+            li.textContent = m.q;
+            list.appendChild(li);
+        });
+        details.open = false;
+        details.style.display = missed.length ? 'block' : 'none';
+        document.getElementById('missed-summary').textContent = '이번에 틀린 문제 ' + missed.length + '개 보기';
+
+        var retryBtn = document.getElementById('retry-missed-btn');
+        retryBtn.textContent = '❌ 틀린 문제만 다시 풀기 (' + missed.length + '문제)';
+        retryBtn.style.display = missed.length ? 'block' : 'none';
+
+        window.scrollTo(0, 0);
+    }
+
+    function retryAll() { beginRound(allQuestions); }
+    function retryMissed() { if (missed.length) beginRound(missed.slice()); }
+
+    init();
+</script>
+</body>
+</html>

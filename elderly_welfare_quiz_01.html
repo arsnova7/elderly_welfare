@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>노인복지론 퀴즈</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+    :root {
+        --primary: #b45309;
+        --bg-gray: #f4f6f8;
+        --success: #28a745;
+        --danger: #dc3545;
+    }
+    body { font-family: 'Pretendard', sans-serif; background-color: var(--bg-gray); margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
+    .container { width: 100%; max-width: 700px; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .header h1 { font-size: 1.8rem; color: #14213d; font-weight: 800; margin-bottom: 10px; word-break: keep-all; }
+    .header p { color: #55657d; font-weight: bold; font-size: 1.1rem; margin: 0; }
+    .header .score-text { margin-top: 6px; color: #166534; font-size: 1rem; }
+
+    .quiz-box { background: white; border-radius: 15px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .q-type { display: inline-block; background: #e0e7f1; color: #14213d; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; margin-bottom: 15px; font-weight: 700; }
+    #question-text { font-weight: bold; font-size: 1.2rem; margin-bottom: 25px; word-break: keep-all; line-height: 1.4; color: #14213d; }
+
+    .option-btn { width: 100%; text-align: left; padding: 16px; margin: 10px 0; border: 1.5px solid #e0e7f1; border-radius: 10px; background: white; cursor: pointer; font-size: 1.05rem; transition: 0.2s; line-height: 1.4; color: #2f3640; font-weight: 500; font-family: inherit; }
+    .option-btn:hover { background: #fff7ed; border-color: var(--primary); }
+    .option-btn:focus-visible, .btn-next:focus-visible, .result-btn:focus-visible { outline: 3px solid #14213d; outline-offset: 2px; }
+    .option-btn.correct { background: #e6fffa; border-color: var(--success); color: var(--success); font-weight: bold; }
+    .option-btn.wrong { background: #fff5f5; border-color: var(--danger); color: var(--danger); opacity: 0.6; }
+
+    .btn-next { width: 100%; padding: 16px; border-radius: 10px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin-top: 25px; display: none; font-size: 1.1rem; transition: 0.2s; font-family: inherit; }
+    .btn-next:hover { opacity: 0.9; transform: translateY(-2px); }
+
+    .hint-box, .exp-box { padding: 18px; border-radius: 10px; margin-top: 15px; display: none; line-height: 1.6; word-break: keep-all; font-size: 0.95rem; }
+    .hint-box { background: #fffbeb; border: 1px solid #fbd38d; color: #b45309; }
+    .exp-box { background: #f0fdf4; border: 1px solid #bbf7d0; color: #065f46; }
+
+    .result-card { background: white; border-radius: 20px; padding: 40px; text-align: center; display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+    .result-btn { width: 100%; padding: 16px; margin: 10px 0; border: 1.5px solid #e0e7f1; border-radius: 10px; background: white; cursor: pointer; font-size: 1.05rem; font-weight: bold; transition: 0.2s; font-family: inherit; }
+    .result-btn:hover { background: #f3f6fa; }
+    .result-score { margin: 6px 0 4px; font-size: 3.4rem; font-weight: 800; color: var(--primary); line-height: 1.1; }
+    .result-detail { margin: 0 0 10px; color: #55657d; line-height: 1.6; word-break: keep-all; }
+    #result-msg { margin: 0 0 18px; line-height: 1.6; word-break: keep-all; color: #14213d; font-weight: 600; }
+    .missed { text-align: left; margin: 0 0 18px; padding: 10px 16px; border: 1px solid #e0e7f1; border-radius: 10px; }
+    .missed summary { cursor: pointer; font-weight: 700; color: #14213d; padding: 4px 0; }
+    .missed ol { margin: 10px 0 4px; padding-left: 26px; font-size: 0.95rem; line-height: 1.55; word-break: keep-all; color: #2f3640; }
+    .missed li { margin-bottom: 8px; }
+
+    /* 문제 화면 아래의 목록으로 돌아가기 버튼 */
+    .list-btn { width: 100%; padding: 14px; margin-top: 16px; border: 1.5px solid #cbd5e1; border-radius: 10px; background: white; color: #14213d; font-family: inherit; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .list-btn:hover { background: #f3f6fa; }
+    .list-btn:focus-visible { outline: 3px solid #14213d; outline-offset: 2px; }
+
+    /* 데이터 검사 결과 화면 */
+    .problem-card { display: none; background: white; border-radius: 15px; padding: 28px; border-left: 6px solid var(--danger); box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .problem-card h2 { margin: 0 0 8px; font-size: 1.3rem; color: #14213d; }
+    .problem-card .summary { margin: 0 0 16px; color: #55657d; line-height: 1.6; word-break: keep-all; }
+    .problem-list { list-style: none; margin: 0 0 8px; padding: 0; }
+    .problem-list li { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid #e0e7f1; line-height: 1.5; word-break: keep-all; }
+    .problem-list .tag { flex: none; min-width: 3.2rem; font-weight: 800; color: var(--danger); }
+    .problem-list .warn .tag { color: var(--primary); }
+    .problem-card .tips { margin: 12px 0 0; padding: 14px; background: #f3f6fa; border-radius: 10px; font-size: 0.92rem; line-height: 1.6; color: #2f3640; word-break: keep-all; }
+    .problem-card .tips ul { margin: 6px 0 0; padding-left: 20px; }
+    #partial-btn { width: 100%; padding: 16px; margin-top: 16px; border: none; border-radius: 10px; background: var(--primary); color: white; font-weight: bold; font-size: 1.05rem; cursor: pointer; font-family: inherit; }
+    #partial-btn:focus-visible { outline: 3px solid #14213d; outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="container">
+    <div id="problem-screen" class="problem-card" role="alert">
+        <h2 id="problem-title"></h2>
+        <p id="problem-summary" class="summary"></p>
+        <ul id="problem-list" class="problem-list"></ul>
+        <div id="problem-tips" class="tips"></div>
+        <button id="partial-btn" type="button"></button>
+    </div>
+
+    <div id="quiz-screen">
+        <div class="header">
+            <h1 id="lecture-title"></h1>
+            <p id="progress-text"></p>
+            <p id="score-text" class="score-text"></p>
+        </div>
+        <div class="quiz-box">
+            <div id="question-type" class="q-type">개념확인</div>
+            <div id="question-text"></div>
+            <div id="options-container"></div>
+
+            <div id="hint-box" class="hint-box">💡 <b>힌트:</b> <span id="hint-text"></span></div>
+            <div id="exp-box" class="exp-box">✅ <b>정답 및 해설:</b> <span id="exp-text"></span></div>
+
+            <button id="next-btn" class="btn-next" type="button" onclick="nextQuestion()">다음 문제로</button>
+        </div>
+
+        <button class="list-btn" type="button" onclick="goList()">🏠 목록으로 돌아가기</button>
+    </div>
+
+    <div id="result-screen" class="result-card">
+        <h2 id="result-title">🎊 학습을 마쳤습니다!</h2>
+        <p id="result-score" class="result-score"></p>
+        <p id="result-detail" class="result-detail"></p>
+        <p id="result-msg"></p>
+        <details id="missed-details" class="missed">
+            <summary id="missed-summary"></summary>
+            <ol id="missed-list"></ol>
+        </details>
+        <button id="retry-missed-btn" class="result-btn" type="button" style="background:var(--primary); color:white; border:none;" onclick="retryMissed()"></button>
+        <button class="result-btn" type="button" onclick="retryAll()">🔄 처음부터 다시 풀기</button>
+        <button class="result-btn" type="button" onclick="location.href='index.html'">🏠 목록으로 돌아가기</button>
+    </div>
+</div>
+
+<!-- ① 오류 수집용: 반드시 맨 위(②, ③보다 앞)에 두세요. 수정하지 마세요. -->
+<script>
+    window.__dataErrors = [];
+    window.addEventListener('error', function (e) {
+        window.__dataErrors.push({ msg: e.message, line: e.lineno });
+    });
+</script>
+
+<!-- ② 장 설정: 새 장을 만들 때 번호(1~15)와 제목만 고치세요. -->
+<script>
+    const LECTURE = { no: 1, title: "노인에 대한 이해" };
+</script>
+
+<!-- ③ 퀴즈 데이터: 노트북LM이 만든 const quizData = [...]; 를 통째로 덮어쓰세요.
+     아래 1문항은 화면 확인용 예시입니다. 덮어쓸 때 이 예시도 같이 지우세요.
+     문제마다 type, q, o, a, h, e 가 모두 있어야 하고, a는 첫 번째 보기가 0입니다. -->
+<script>
+    const quizData = [
+        {
+            "type": "개념확인",
+    "q": "다음 빈칸에 들어갈 알맞은 용어는? '□□연령은 주민등록증상의 연령을 의미하는 것으로, 우리가 일상적으로 나이라고 말하는 것이다. □□□ 연령은 한 개인이 속한 사회에서 자신의 연령에 요구되는 역할을 얼마나 잘 수행하는지를 의미하는 것으로, 사회적 기대나 규범을 반영하는 나이를 의미한다.' [워크북 1장 문제 1, 기말 연습문제정리 1강 Q6]",
+    "o": [
+      "생활, 사회적",
+      "생물학적, 심리적",
+      "심리적, 생활",
+      "사회적, 생물학적"
+    ],
+    "a": 0,
+    "h": "일상적 나이와 사회적 기대 역할을 반영하는 연령의 조합을 찾으세요.",
+    "e": "주민등록상의 나이는 생활연령(chronological age)이며, 사회적 기대나 규범에 따른 역할 수행 정도를 의미하는 연령은 사회적 연령(social age)입니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "다음 중 연령과 사회유형에 대한 설명으로 가장 알맞은 것은? [워크북 1장 문제 2, 기말 연습문제정리 1강 Q3, 강의연습문제 1강 3번]",
+    "o": [
+      "연령분절사회는 연령이 진입장벽으로 작용하지 않는 사회이다.",
+      "연령분절사회에서는 상이한 연령층 간의 상호작용이 활발하게 이루어진다.",
+      "연령통합사회는 연령에 따른 사회적 역할의 진입과 퇴장이 경직되어 있다.",
+      "연령분절사회에서는 연령에 따른 사회적 역할로의 진입과 퇴장이 분명히 존재한다."
+    ],
+    "a": 3,
+    "h": "연령분절사회는 나이에 따른 사회적 역할의 진입과 퇴장이 경직되어 구분되는 사회입니다.",
+    "e": "연령분절사회(age differentiated society)는 연령에 따라 사회 구조가 분절되어 역할의 진입과 퇴장이 분명하며, 연령통합사회(age integrated society)는 연령이 어떤 활동의 진입장벽이 되지 않는 사회입니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 노년기 인지변화에 대한 설명으로 가장 알맞은 것은? [워크북 1장 문제 3, 기말 연습문제정리 1강 Q7, 강의연습문제 1강 4번]",
+    "o": [
+      "유동성 지능은 쇠퇴하지만 결정성 지능은 그대로 유지되거나 심지어 증가한다는 연구결과도 있다.",
+      "주의과정, 작업기억능력, 추론과 해석 능력은 나이가 들수록 일관되게 증가한다.",
+      "청년층보다 학습능력이 무조건 현저히 떨어져 학습 증진이 일어나지 않는다.",
+      "노년기가 되면 일상적 문제해결능력이 유동성 지능의 감퇴로 인해 무조건 급격히 마비된다."
+    ],
+    "a": 0,
+    "h": "타고난 지능과 학습경험에 의존하는 지능의 노화 차이를 떠올려 보세요.",
+    "e": "노년기에는 생물학적으로 결정되는 유동성 지능은 쇠퇴하지만, 교육과 경험에 의존하는 결정성 지능은 그대로 유지되거나 증가하는 양상을 보입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음 중 노년기 성격변화의 일반적 특성으로 알맞은 것은? [워크북 1장 문제 4, 기말 연습문제정리 1강 Q8]",
+    "o": [
+      "조심성 감소",
+      "수동성 감소",
+      "경직성 감소",
+      "시간조망 변화"
+    ],
+    "a": 3,
+    "h": "노년기에는 남아있는 삶의 시간을 의식하면서 내면을 돌아보는 변화가 일어납니다.",
+    "e": "노년기에는 내향성, 수동성, 조심성, 경직성, 우울증 경향, 친숙한 사물에 대한 애착이 증가하며, 시간에 대한 조망이 달라져 지난 삶을 회상하는 성격적 변화가 나타납니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음 중 퀴블러-로스(Kübler-Ross)가 제시한 죽음에 대한 정서적 반응 5단계에 해당하지 않는 것은? [워크북 1장 문제 5, 기말 연습문제정리 1강 Q9]",
+    "o": [
+      "부정",
+      "분노",
+      "탐색",
+      "우울"
+    ],
+    "a": 2,
+    "h": "죽음 반응 5단계는 부정, 분노, 협상(타협), 우울, 수용입니다.",
+    "e": "퀴블러-로스가 제시한 불치병 환자의 죽음 수용 5단계는 부정(Denial), 분노(Anger), 협상(Bargaining), 우울(Depression), 수용(Acceptance)이며 '탐색'은 포함되지 않습니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음 중 노화(aging)의 특성에 대한 설명으로 가장 알맞은 것은? [기말 연습문제정리 1강 Q1, 강의연습문제 1강 1번]",
+    "o": [
+      "가역성",
+      "유익성",
+      "점진성",
+      "특수성"
+    ],
+    "a": 2,
+    "h": "노화는 시간에 따라 서서히 진행되며 누구나 경험하는 보편적 변화입니다.",
+    "e": "노화의 주요 특징은 누구나 경험하는 보편성, 개체마다 속도가 다른 고유성, 시간 경과에 따라 서서히 진행되는 점진성, 신체 기능 저하를 유발하는 유해성, 되돌릴 수 없는 불가역성입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "사회적 기대나 규범을 반영하여 관습에 따른 결혼 적령기나 특정 연령의 역할 수행 정도를 표현할 때 사용하는 연령 정의는? [기말 연습문제정리 1강 Q2, 강의연습문제 1강 2번]",
+    "o": [
+      "생물학적 연령",
+      "생활연령",
+      "심리적 연령",
+      "사회적 연령"
+    ],
+    "a": 3,
+    "h": "사회적 규범과 기대에 맞추어 연령에 요구되는 역할을 잘 수행하는지 반영하는 나이입니다.",
+    "e": "사회적 연령(social age)은 개인이 속한 사회의 기대나 규범을 반영하며, 특정 나이에 요구되는 사회적 역할 수행 정도를 의미합니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 퀴블러-로스의 죽음에 대한 반응 단계에 대한 설명으로 가장 알맞은 것은? [기말 연습문제정리 1강 Q4, 강의연습문제 1강 5번]",
+    "o": [
+      "모든 시한부 환자는 정확히 4단계의 정서 반응만 거친다.",
+      "질문지 조사를 통한 대규모 통계 분석으로 반응 단계를 규명하였다.",
+      "각 정서 반응이 반드시 순서대로만 나타나는 것은 아니며 여러 감정이 혼재되기도 한다.",
+      "협상 단계에 다다르는 것이 가장 품위 있고 완벽한 죽음 수용 단계이다."
+    ],
+    "a": 2,
+    "h": "정서적 반응의 유연성과 복합성을 설명한 부분을 떠올려 보세요.",
+    "e": "퀴블러-로스는 심층면접을 통해 5단계를 발표하였으며, 이 정서적 반응들이 반드시 순서대로 나타나는 것은 아니며 둘 이상 혼재되어 나타나거나 일부가 생략되기도 한다고 밝혔습니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 노년기 신체적·생리적 발달 변화에 대한 설명으로 알맞은 것은? [기말 연습문제정리 1강 Q5]",
+    "o": [
+      "피부 탄력이 강화된다.",
+      "피부의 주름이 깊어지고 반점이 늘어난다.",
+      "척추 디스크 수축으로 신장이 점차 증가한다.",
+      "면역기관이 강화되어 감염성 질환에 강해진다."
+    ],
+    "a": 1,
+    "h": "노년기에는 피부 탄력 감소, 주름 증가, 신장 감소, 전반적 인체조직의 퇴행적 변화가 일어납니다.",
+    "e": "노년기 신체 변화로 피부 탄력 상실과 주름·반점 증가, 머리카락 약화, 척추 디스크 수축에 따른 신장 감소, 골다공증 위험 증가, 면역기관의 퇴행적 변화 등이 나타납니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "출생 이후부터 달력상의 나이로 계산한 나이가 일정 연령 이상일 경우 노인으로 규정하는 기준 연령은? [2013년 기출 25번]",
+    "o": [
+      "기능적 연령",
+      "사회적 연령",
+      "생활연령(역연령)",
+      "개인의 자각 연령"
+    ],
+    "a": 2,
+    "h": "주민등록상의 달력 나이를 가리키는 용어입니다.",
+    "e": "생활연령(역연령, chronological age)은 주민등록증상의 달력 나이로, 제도상 수급자격 및 노인 구분 기준으로 가장 널리 쓰입니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 우리나라 고령화의 주요 원인에 해당하지 않는 것은? [2013년 기출 28번]",
+    "o": [
+      "평균수명의 연장",
+      "출산율의 급격한 회복",
+      "급속한 고령화 속도",
+      "보건의료 기술의 발전과 생활수준 향상"
+    ],
+    "a": 1,
+    "h": "한국 사회는 세계적으로 빠른 저출생과 고령화 현상을 겪고 있습니다.",
+    "e": "한국의 고령화는 평균수명 연장과 합계출산율의 급격한 저하(저출생)가 주된 원인이며, 출산율 회복은 고령화 원인이 아닙니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 인구 고령화가 가져오는 사회적 영향에 대한 설명으로 가장 적절한 것은? [2013년 기출 29번]",
+    "o": [
+      "유소년 인구 비중의 폭발적 증가",
+      "생산가능인구 증가로 인한 국가 재정의 극적 안정",
+      "생산가능인구 감소 및 부양비 증가에 따른 세대 간 갈등 심화 가능성",
+      "노년 부양비의 지속적 감소"
+    ],
+    "a": 2,
+    "h": "생산가능인구 대비 고령인구 비율이 증가함에 따라 발생하는 사회적 부담을 생각하세요.",
+    "e": "고령화 가속화는 노년부양비를 상승시켜 생산가능인구의 경제적 부담을 늘리고 세대 간 갈등을 유발할 수 있습니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음 중 노인복지학의 학문적 특성에 대한 설명으로 올바르지 않은 것은? [2013년 기출 30번]",
+    "o": [
+      "노화과정에서 발생할 수 있는 다양한 문제를 예방하는 방안을 연구한다.",
+      "노년기의 성공적 적응을 도모하고 삶의 질을 향상시키는 것을 목표로 한다.",
+      "노인복지학은 오직 순수 학문적 속성만 가지며 실천성은 배제된다.",
+      "다양한 학문 분야의 성과를 활용하는 다학제적·응용적 학문이다."
+    ],
+    "a": 2,
+    "h": "노인복지학은 현장 개입과 정책 마련을 목표로 하는 실천적·응용적 학문입니다.",
+    "e": "노인복지학은 노년학 기초 위에 사회정책과 서비스를 결합하여 현장의 문제를 해결하므로 응용적·실천적·다학제적 성격을 가집니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 노년기 지적 능력 및 인지 변화에 대한 설명으로 가장 적절한 것은? [2013년 기출 32번]",
+    "o": [
+      "유동성 지능과 결정성 지능이 똑같이 급격히 상승한다.",
+      "주의과정이나 작업기억, 단기기억 및 최근기억 능력은 약화되는 경향이 있다.",
+      "연습이나 경험을 통한 학습 효과가 청년층에 비해 전혀 발생하지 않는다.",
+      "창의성은 노화가 진행됨에 따라 모든 노인에게 자동으로 극대화된다."
+    ],
+    "a": 1,
+    "h": "기억의 영역별 차이에서 주의 집중 및 작업기억 과정의 연령차를 생각해 보세요.",
+    "e": "노년기 인지적 노화 과정에서 주의과정, 작업기억, 단기 및 최근 기억 부호화·인출 등은 약화되는 반면, 암묵기억, 사진재인, 의미적 점화 등은 상대적으로 잘 유지됩니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 노년기 성격특성의 일반적 변화에 해당하지 않는 것은? [2013년 기출 33번]",
+    "o": [
+      "내향성 및 수동성 증가",
+      "조심성 및 경직성 증가",
+      "전통적 성역할 구분의 현저한 강화 및 성역할 차이 극대화",
+      "친근한 사물에 대한 애착 증가"
+    ],
+    "a": 2,
+    "h": "노년기 성역할 태도는 양성성(androgyny shift) 방향으로 변화합니다.",
+    "e": "노년기에는 남성과 여성 모두 억압했던 반대 성의 원형(아니마/아니무스)을 표출하면서 양성성이 증가하는 성역할 변화를 보입니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 노년기 성격특성 변화로 가장 옳은 것은? [2014년 기출 1번]",
+    "o": [
+      "우울 경향이 완전히 소멸한다.",
+      "지나온 과거에 대한 회상이 증가한다.",
+      "심리적 에너지가 외부 세계로만 집중된다.",
+      "친숙한 사물이나 오랫동안 사용해 온 물건에 대한 애착이 감소한다."
+    ],
+    "a": 1,
+    "h": "죽음을 염두에 두면서 지나온 삶을 정리하고 회상하는 특성을 떠올려 보세요.",
+    "e": "노년기에는 자신의 지나온 삶을 되돌아보는 회상(reminiscence)이 증가하고, 추억이 깃든 친숙한 사물에 대한 애착이 늘어납니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "한 개인이 속한 사회에서 자신의 연령에 요구되는 역할 수행이 기준이 되며, 사회적 기대나 규범을 반영한 나이는? [2014년 기출 2번, 2018년 기출 3번]",
+    "o": [
+      "생활연령",
+      "규범연령",
+      "심리적 연령",
+      "사회적 연령"
+    ],
+    "a": 3,
+    "h": "적령기 개념이나 사회적 기대 역할을 반영하는 나이입니다.",
+    "e": "사회적 연령(social age)은 사회적 기대나 규범을 반영하여, 해당 연령에 요구되는 사회적 역할을 얼마나 잘 수행하는지 나타냅니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음 빈칸 (가), (나)에 들어갈 지능의 종류로 알맞게 짝지어진 것은? '(가)지능은 타고난 지능으로 생물학적으로 결정되는 반면, (나)지능은 학교교육과 일상생활에서의 학습경험에 의존하는 인지능력이다.' [2014년 기출 5번]",
+    "o": [
+      "(가) 유동성, (나) 결정성",
+      "(가) 결정성, (나) 유동성",
+      "(가) 생물학적, (나) 사회적",
+      "(가) 언어성, (나) 동작성"
+    ],
+    "a": 0,
+    "h": "생물학적 타고난 지능은 유동성, 학습 경험에 의존하는 지능은 결정성 지능입니다.",
+    "e": "유동성 지능(fluid intelligence)은 생물학적으로 결정되는 타고난 지능이며, 결정성 지능(crystallized intelligence)은 교육과 경험을 통해 발달하는 지능입니다."
+  },
+  {
+    "type": "법·제도 내용",
+    "q": "다음 중 노인 관련 제도의 각종 수급권이나 서비스 이용 자격의 기초 기준으로 가장 흔히 활용되는 연령 정의는? [2015년 기출 1번]",
+    "o": [
+      "생활연령",
+      "생물학적 연령",
+      "심리적 연령",
+      "사회적 연령"
+    ],
+    "a": 0,
+    "h": "주민등록증에 기재된 일상적 달력 나이입니다.",
+    "e": "각종 법률과 복지제도에서 수급권 자격을 판정할 때는 가장 명확한 객관적 기준인 주민등록상의 생활연령(chronological age)을 사용합니다."
+  },
+  {
+    "type": "수치·통계 해석",
+    "q": "UN 기준에 따라 65세 이상 인구가 전체 인구에서 차지하는 비율이 14% 이상 20% 미만인 사회를 무엇이라 하는가? [2015년 기출 4번]",
+    "o": [
+      "고령화사회",
+      "고령사회",
+      "초고령사회",
+      "연령통합사회"
+    ],
+    "a": 1,
+    "h": "7% 이상은 고령화사회, 14% 이상은 고령사회, 20% 이상은 초고령사회입니다.",
+    "e": "65세 이상 고령인구 비중이 7% 이상이면 고령화사회(aging society), 14% 이상이면 고령사회(aged society), 20% 이상이면 초고령사회(post-aged/super-aged society)로 분류합니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음 중 '선배시민(Senior Citizen)' 관점에서 바라보는 노인의 정체성 및 인식론적 규정으로 가장 알맞은 것은? [2016년 기출 1번]",
+    "o": [
+      "사회에 부양만 요구하는 무기력한 수혜자",
+      "동정과 구호의 대상인 불쌍한 늙은이",
+      "경험과 지혜를 가지고 공동체의 문제를 고민하며 길을 내는 권리 주체",
+      "자본주의 시장에서 낙오된 비생산적 인구"
+    ],
+    "a": 2,
+    "h": "노인을 돌봄의 대상이 아닌 권리와 사회적 책임을 지닌 당사자로 인식합니다.",
+    "e": "선배시민은 노인을 단순한 수동적 돌봄 대상('늙은이')이 아니라, 삶의 지혜를 바탕으로 공동체를 돌보고 권리를 행사하는 주체로 정립합니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 인간의 노화(aging)에 대한 설명으로 가장 올바르지 않은 것은? [2017년 기출 1번]",
+    "o": [
+      "시간의 흐름에 따라 나이가 드는 자연스러운 과정이다.",
+      "어느 날 갑자기 유기체 전체에서 일어나는 급작스러운 현상이다.",
+      "신체적·생물학적 변화뿐만 아니라 심리적·사회적 변화를 포함한다.",
+      "노화 과정 속에서도 풍부한 경험을 통해 지혜나 기술 향상을 이룰 수 있다."
+    ],
+    "a": 1,
+    "h": "노화는 일시적 사건이 아니라 시간을 두고 서서히 일어나는 점진적 과정입니다.",
+    "e": "노화는 인생의 한순간에 갑자기 일어나는 급작스러운 현상이 아니라, 장기간에 걸쳐 시간을 두고 진행되는 점진적(progressive) 보편 과정입니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "노화는 단일한 과정이 아니라 다양한 과정이며, 쇠퇴하는 부정적 측면과 지혜를 얻는 긍정적 측면이라는 양면성을 가진다고 주장한 학자는? [2018년 기출 2번]",
+    "o": [
+      "애칠리(Atchley)",
+      "에릭슨(Erikson)",
+      "발테스(Baltes)",
+      "카우길(Cowgill)"
+    ],
+    "a": 0,
+    "h": "노화 과정의 양면성과 다면성을 강조한 학자입니다.",
+    "e": "애칠리(Atchley, 1994)는 노화가 단일한 과정이 아니며 신체 감퇴라는 부정적 경험과 지혜 습득이라는 긍정적 성장 경험을 동시에 갖는 양면성이 있다고 보았습니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "퀴블러-로스의 죽음 수용 5단계 중 예기치 못한 충격적 사실에 대한 완충 역할을 하며 불안한 초기 상황에 대처하는 비교적 건강한 대응 방법은? [2018년 기출 5번]",
+    "o": [
+      "분노",
+      "우울",
+      "부정",
+      "수용"
+    ],
+    "a": 2,
+    "h": "'그럴 리가 없어, 진단이 잘못되었을 거야'라고 반응하는 첫 단계입니다.",
+    "e": "부정(Denial)은 죽음에 임박했을 때 보이는 첫 번째 정서적 반응으로, 충격적인 사실에 대한 완충 역할을 하는 초기 대처 기제입니다."
+  },
+  {
+    "type": "수치·통계 해석",
+    "q": "65세 이상 인구가 전체 인구의 몇 % 이상을 차지할 때 '초고령사회'라고 정의하는가? [2018년 기출 6번]",
+    "o": [
+      "7% 이상",
+      "14% 이상",
+      "15% 이상",
+      "20% 이상"
+    ],
+    "a": 3,
+    "h": "고령화사회는 7%, 고령사회는 14%, 초고령사회는 20% 기준입니다.",
+    "e": "전체 인구 중 65세 이상 인구 비중이 20% 이상일 때 초고령사회(post-aged/super-aged society)라고 합니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "현대 사회에서 노화에 대한 부담감을 마케팅 전략으로 부각시키며 노화를 최대한 늦추려는 제품 판매 전략에 쓰이는 용어는? [2019년 기출 1번]",
+    "o": [
+      "프로에이징(pro-aging)",
+      "안티에이징(anti-aging)",
+      "웰에이징(well-aging)",
+      "성공적 노화(successful aging)"
+    ],
+    "a": 1,
+    "h": "노화를 억제하거나 저항한다는 의미의 표현입니다.",
+    "e": "젊음에 가치를 두는 연령차별적 문화 속에서 소비자의 노화 부담감을 자극하는 마케팅 전략으로 '안티에이징(anti-aging)'이 부각되었습니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음 중 노화의 4대 주요 특징에 해당하지 않는 설명은? [2019년 기출 3번]",
+    "o": [
+      "보편성 - 태어난 유기체라면 누구나 노화를 경험한다.",
+      "고유성 - 개체마다 노화가 진행되는 속도에는 개인차가 있다.",
+      "점진성 - 노화는 시간에 따라 서서히 일어난다.",
+      "특수성 - 정해진 일부 특수 계층만 선택적으로 노화한다."
+    ],
+    "a": 3,
+    "h": "노화는 정해진 일부 사람이 아니라 누구나 겪는 보편적 과정입니다.",
+    "e": "노화의 4대 특성은 보편성(universality), 고유성(individuality), 점진성(progressiveness), 유해성(harmfulness)입니다."
+  },
+  {
+    "type": "법·제도 내용",
+    "q": "우리나라 「노인복지법」 제2조에서 규정한 노인의 법적 정의 및 이념으로 알맞지 않은 것은? [교재 1장 1.1절 노인의 개념, [보충]]",
+    "o": [
+      "국가 및 사회의 발전에 기여해 온 자로서 존경받아야 한다.",
+      "건전하고 안정된 생활을 보장받아야 하는 존재이다.",
+      "사회에 부담만을 주므로 국가의 전적인 규제와 통제를 받아야 하는 수동적 존재이다.",
+      "심신의 건강을 유지하고 지식과 경험을 활용하여 사회발전에 기여하도록 노력해야 한다."
+    ],
+    "a": 2,
+    "h": "노인복지법은 노인을 과거 기여자에 대한 존중과 자발적 사회기여 주체로 규정합니다.",
+    "e": "노인복지법 제2조는 노인을 국가·사회 발전에 기여한 자로서 존경받고, 능력에 따라 사회활동에 참여하며 지식과 경험으로 기여하는 능동적 존재로 규정합니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 100세 사회의 특징과 지향점으로 가장 올바른 설명은? [교재 1장 1.1절 노인의 개념, [보충]]",
+    "o": [
+      "장수가 일부 특권층에게만 허용되는 희귀한 현상이다.",
+      "모든 사람이 고비용을 들여서만 생존해야 하는 고비용 장수 사회를 지향한다.",
+      "장수가 보편화되는 시대로, 보람과 품격을 갖춘 적정비용 장수사회를 목표로 해야 한다.",
+      "노년기에는 새로운 사회적 시스템 구축 없이 개인이 전적으로 노후를 책임져야 한다."
+    ],
+    "a": 2,
+    "h": "100세 사회는 보람과 품격을 갖춘 활기찬 적정비용 장수사회를 목표로 합니다.",
+    "e": "100세 사회는 장수가 보편화되는 시대로, 모든 구성원이 품격 있는 삶을 살 권리를 보장받으면서도 적정비용 장수사회를 지향해야 합니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "성공적 노화(successful aging)에 대한 학술적 논의가 세계노년학회에서 처음 제기된 연도는? [교재 1장 1.1절 노인의 개념, [보충]]",
+    "o": [
+      "1970년",
+      "1986년",
+      "1999년",
+      "2005년"
+    ],
+    "a": 1,
+    "h": "1980년대 중반 세계노년학회에서 처음 제시되었습니다.",
+    "e": "성공적 노화에 대한 논의는 1986년 세계노년학회에서 처음 제기된 이후 다양한 모형과 실천 프로그램으로 발전하였습니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 '2020년도 노인실태조사'에서 65세 이상 노인들이 스스로 노인이라고 생각하는 시작 연령으로 가장 많이(52.7%) 응답한 연령대는? [교재 1장 1.1절 노인의 개념, [보충]]",
+    "o": [
+      "60~64세",
+      "65~69세",
+      "70~74세",
+      "80세 이상"
+    ],
+    "a": 2,
+    "h": "노인 당사자들이 인식하는 노인 시작 연령은 70대 초반으로 상향되는 추세입니다.",
+    "e": "2020년 노인실태조사에 따르면 응답자의 52.7%가 70~74세를 노인의 시작 연령으로 꼽아 법적 기준(65세)보다 높게 인식하고 있습니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "한 개인의 심리적 성숙도, 스트레스 대처 능력, 환경 적응력 및 독립적 인격 형성을 기준으로 산정하는 연령은? [교재 1장 1.1절 노인의 개념, [보충]]",
+    "o": [
+      "생활연령",
+      "생물학적 연령",
+      "심리적 연령",
+      "사회적 연령"
+    ],
+    "a": 2,
+    "h": "피터팬 신드롬이나 마마보이 현상 등 성숙도 차이를 설명할 때 인용되는 나이입니다.",
+    "e": "심리적 연령(psychological age)은 개인의 심리적 성숙도, 환경 변화 적응력, 스트레스 대처 능력을 기준으로 평가하는 연령입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "신체적 외모, 운동 능력, 지적 수행 능력 등을 기준으로 측정하며, 식습관이나 운동 등 생활양식에 따라 생활연령과 큰 차이가 날 수 있는 연령은? [교재 1장 1.1절 노인의 개념, [보충]]",
+    "o": [
+      "생물학적 연령",
+      "생활연령",
+      "사회적 연령",
+      "규범연령"
+    ],
+    "a": 0,
+    "h": "동창회에서 생활연령은 같아도 외모나 신체 기능이 다르게 보이는 것을 설명합니다.",
+    "e": "생물학적 연령(biological age)은 신체적 외모, 운동 능력, 인체 기능 등을 기준으로 산정하는 연령입니다."
+  },
+  {
+    "type": "의료·발달 지식",
+    "q": "65세 이상 고령층의 60% 이상에서 발병하며, 나이가 들수록 여성에게 더 많이 나타나고 무릎이나 손 관절 연골 소실을 유발하는 대표적 퇴행성 질환은? [교재 1장 1.2절 노년기 발달, [보충]]",
+    "o": [
+      "퇴행성 관절염(골관절염)",
+      "골다공증",
+      "고혈압",
+      "파킨슨병"
+    ],
+    "a": 0,
+    "h": "관절 연골의 손상과 골극 형성 등을 유발하는 국소 관절 질환입니다.",
+    "e": "퇴행성 관절염(골관절염)은 관절 연골의 점진적 손상으로 발생하며, 65세 이상에서 60% 이상 발병하고 고령 여성에게 더 흔히 나타납니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "뇌가 성장과 재조직을 통해 스스로 신경 회로를 바꾸는 능력으로, 노년기에 비축분을 형성하여 지혜와 회복탄력성을 발현시키는 뇌의 특성은? [교재 1장 1.2절 노년기 발달, [보충]]",
+    "o": [
+      "신경가소성(neuroplasticity)",
+      "유동성 지능",
+      "암묵기억",
+      "신경 자극 전속"
+    ],
+    "a": 0,
+    "h": "마크 아그로닌 박사가 노년의 지혜와 회복탄력성 창출 원리로 설명한 뇌의 재조직 능력입니다.",
+    "e": "신경가소성은 뇌가 환경과 경험에 맞추어 신경 회로를 재구성하는 능력으로, 노년기에도 비축분을 유발하여 지혜와 창의성을 꽃피우게 합니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "융(Jung)의 성역할 이론에서 성인기 동안 여성과 남성이 각각 사회적으로 억압해 온 성격 원형(archetype)의 명칭이 바르게 짝지어진 것은? [교재 1장 1.2절 노년기 발달, [보충]]",
+    "o": [
+      "남성의 여성적 원형: 아니마(Anima) / 여성의 남성적 원형: 아니무스(Animus)",
+      "남성의 여성적 원형: 아니무스(Animus) / 여성의 남성적 원형: 아니마(Anima)",
+      "남성의 원형: 페르소나 / 여성의 원형: 에고",
+      "남성의 원형: 그림자 / 여성의 원형: 자기"
+    ],
+    "a": 0,
+    "h": "남성 속의 여성성은 아니마, 여성 속의 남성성은 아니무스입니다.",
+    "e": "융에 따르면 남성은 무의식 속 여성적 원형인 아니마(Anima)를, 여성은 남성적 원형인 아니무스(Animus)를 가지고 있으며, 중년기 이후 표출되어 양성성으로 변화합니다."
+  },
+  {
+    "type": "이론·학자",
+    "q": "노년기 성격 연구에서 성인 전 생애에 걸쳐 성격 특성(traits)이 거의 변하지 않고 안정적으로 유지된다고 주장한 대표적 종단연구 학자는? [교재 1장 1.2절 노년기 발달, [보충]]",
+    "o": [
+      "에릭슨(Erikson)",
+      "코스타와 맥크레(Costa & McCrae)",
+      "펙(Peck)",
+      "레빈슨(Levinson)"
+    ],
+    "a": 1,
+    "h": "특성 모델(trait model)에 기반하여 매 6년마다 2,000명의 성격 안정성을 검증했습니다.",
+    "e": "코스타와 맥크레는 특성 모델에 기초하여 성인의 성격 특성이 노년기까지 매우 안정적임을 장기 종단연구로 규명하였습니다."
+  },
+  {
+    "type": "이론·학자",
+    "q": "전 생애에 걸친 발달단계를 제시한 단계 모델(stage model)에 속하며, 노년기를 '자아통합 대 절망'의 위기 극복 과정으로 설명한 학자는? [교재 1장 1.2절 노년기 발달, [보충]]",
+    "o": [
+      "프로이트(Freud)",
+      "에릭슨(Erikson)",
+      "샤이에(Schaie)",
+      "솔트하우스(Salthouse)"
+    ],
+    "a": 1,
+    "h": "사춘기 이후에도 인간이 전 생애 동안 발달하고 성격이 변화한다고 본 학자입니다.",
+    "e": "에릭슨(Erikson)은 단계 모델의 대표적 학자로 전 생애적 발달을 주장하였으며, 노년기 과업으로 자아통합감을 제시하였습니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "죽음을 두려워하거나 적극적으로 환영하지도 않으면서, 살아 있다는 것은 곧 죽음을 포함한다는 인식을 바탕으로 죽음을 삶의 불가피한 부분으로 수용하는 죽음 수용 유형은? [교재 1장 1.2절 노년기 발달, [보충]]",
+    "o": [
+      "접근적 수용",
+      "회피적 수용",
+      "중립적 수용",
+      "부정적 수용"
+    ],
+    "a": 2,
+    "h": "Wong이 제시한 죽음 수용 유형 중 가장 성숙한 태도로 평가받는 수용 방식입니다.",
+    "e": "중립적 수용(neutral acceptance)은 죽음을 삶의 필수적·자연적 요소로 편안하게 받아들이는 태도로 가장 성숙한 죽음 수용 방식으로 꼽힙니다."
+  },
+  {
+    "type": "수치·통계 해석",
+    "q": "다음 중 유년부양비와 노년부양비를 계산하는 분모에 해당하는 인구 집단은? [교재 1장 1.3절 사회인구학적 변화, [보충]]",
+    "o": [
+      "총인구(0세 이상)",
+      "유년층 인구(0~14세)",
+      "생산가능연령층 인구(15~64세)",
+      "노령층 인구(65세 이상)"
+    ],
+    "a": 2,
+    "h": "부양비를 계산할 때 경제활동 및 부양 책임을 지는 연령층 인구입니다.",
+    "e": "부양비 지표에서 유년부양비와 노년부양비 모두 분모는 '생산가능연령층 인구(15~64세)'입니다."
+  },
+  {
+    "type": "수치·통계 해석",
+    "q": "한국 사회의 고령화 진입 연도 연결이 잘못된 것은? [교재 1장 1.3절 사회인구학적 변화, [보충]]",
+    "o": [
+      "고령화사회(7% 이상): 2000년",
+      "고령사회(14% 이상): 2017~2020년 무렵",
+      "초고령사회(20% 이상): 2025년",
+      "고령화사회(7% 이상): 2025년"
+    ],
+    "a": 3,
+    "h": "한국은 2000년에 고령화사회, 2017~2018년 고령사회, 2024~2025년 초고령사회에 진입하였습니다.",
+    "e": "한국은 2000년에 이미 고령인구 7%를 넘어 고령화사회에 진입했으므로 2025년을 고령화사회 진입으로 설명한 것은 오류입니다."
+  },
+  {
+    "type": "표·그래프 해석",
+    "q": "통계청 가구추계에 따르면 65세 이상 노인가구 유형 중 향후 비중이 가장 높게 증가하여 보편적 삶의 형태('뉴 노멀')가 될 가구 유형은? [교재 1장 1.3절 사회인구학적 변화, [보충]]",
+    "o": [
+      "3세대 이상 동거 가구",
+      "부부+자녀 가구",
+      "1인 가구 및 부부 가구",
+      "한부모+자녀 가구"
+    ],
+    "a": 2,
+    "h": "자녀 동거 비율은 감소하고 노인 1인가구와 노인 부부가구가 급증합니다.",
+    "e": "고령화에 따라 노인가구 중 부부가구와 1인가구가 대다수를 차지하게 되며, 향후 1인가구 비중이 가장 높아질 것으로 전망됩니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "노년학(gerontology)의 어원이 되는 그리스어 'geros' 또는 'geron'의 의미는? [교재 1장 1.4절 노인복지학의 이해, [보충]]",
+    "o": [
+      "청년",
+      "노령 또는 노인",
+      "질병",
+      "복지"
+    ],
+    "a": 1,
+    "h": "노년학은 노령/노인(geron)과 연구(logos)의 합성어입니다.",
+    "e": "Gerontology는 노령·노인을 뜻하는 geros/geron과 학문·연구를 뜻하는 logos가 합쳐져 만들어진 용어입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "노인복지학이 사회복지학, 가족학, 의학, 보건학, 간호학 등 다양한 학문의 성과를 통합하여 연구하는 학문적 특성을 무엇이라 하는가? [교재 1장 1.4절 노인복지학의 이해, [보충]]",
+    "o": [
+      "단일학제성",
+      "폐쇄성",
+      "다학제적(융합적) 성격",
+      "순수 이론성"
+    ],
+    "a": 2,
+    "h": "여러 학문 분야의 이론과 지식을 종합적으로 활용하는 성격입니다.",
+    "e": "노인복지학은 노인 문제의 복합적 원인을 규명하고 개입하기 위해 여러 학문 성과를 필요로 하므로 다학제적(multidisciplinary) 성격을 띱니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "샤이에와 발테스(Schaie & Baltes)의 연구에서 강조한 노년기 인지 발달의 긍정적 측면으로, 인생에 대한 통찰력과 대처 능력을 제공하는 새로운 정신 능력은? [교재 1장 1.2절 노년기 발달, [보충]]",
+    "o": [
+      "반응속도",
+      "지혜(wisdom)",
+      "공간지각력",
+      "작업기억량"
+    ],
+    "a": 1,
+    "h": "풍부한 생애 경험과 삶의 성찰을 통해 발달하는 대표적 노년기 인지적 강점입니다.",
+    "e": "샤이에와 발테스는 노년기에도 지혜(wisdom)와 같은 새로운 능력이 형성되며, 이는 인생의 통찰과 대처 능력을 제공한다고 보았습니다."
+  },
+  {
+    "type": "사례적용",
+    "q": "다음 중 여성노인이 경험하는 '노화의 이중기준'에 대한 설명으로 가장 올바른 것은? [교재 1장 1.2절 노년기 발달, [보충]]",
+    "o": [
+      "남성노인보다 여성노인에게 주름이나 은발이 완숙미로 긍정 평가받는다.",
+      "젊음을 선호하는 문화 속에서 남성의 노화보다 여성의 노화가 '젊음의 상실'로 더 가혹하게 인식되는 젠더 차별적 현상이다.",
+      "여성노인은 노화에 대해 어떠한 스트레스도 받지 않는다.",
+      "남성노인만 노화로 인한 외모 변화에 경제적 제약을 받는다."
+    ],
+    "a": 1,
+    "h": "노화의 외모적 특성이 남성에겐 완숙함, 여성에겐 단순 젊음의 상실로 소비되는 현상입니다.",
+    "e": "성차별적 노화의 이중기준은 은발이나 주름이 남성에겐 경험과 완숙미로 여겨지는 반면, 여성에겐 젊음의 상실로만 규정되는 차별적 현상입니다."
+  },
+  {
+    "type": "사례적용",
+    "q": "앙리 마티스가 노년에 병환으로 침상 생활을 하면서 종이를 오려 캔버스에 배치하는 새로운 화풍을 개발한 사례가 보여주는 노년기의 긍정적 강점은? [교재 1장 1.2절 노년기 발달, [보충]]",
+    "o": [
+      "신체적 민첩성",
+      "유동성 지능의 폭발",
+      "노년기의 창의성 발현",
+      "반응시간의 단축"
+    ],
+    "a": 2,
+    "h": "신체적 제약 속에서도 지혜와 회복탄력성이 극대화되어 꽃피우는 성과입니다.",
+    "e": "신경가소성과 회복탄력성, 지혜가 극대화될 때 노년기에도 새로운 방식과 통찰을 탐색하는 '창의성'이 발현됨을 보여주는 사례입니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "인간발달에서 태어나면 당연히 경험하는 보편적 변화로서, 시간 경과에 따라 세포와 조직에서 일어나는 점진적 변화를 뜻하는 개념은? [교재 1장 1.1절 노인의 개념, [보충]]",
+    "o": [
+      "발달",
+      "성숙",
+      "노화(aging)",
+      "적응"
+    ],
+    "a": 2,
+    "h": "시간의 흐름에 따라 유기체 전반에서 나타나는 점진적 하향성/보편적 변화입니다.",
+    "e": "노화(aging)란 시간의 흐름에 따라 유기체의 세포, 조직, 또는 유기체 전체에서 일어나는 점진적이고 보편적인 변화를 의미합니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "성격 태도 중 남성과 여성의 역할, 의무, 선호 등이 서로 다르지 않다고 생각하며, 노년기 정신건강과 결혼만족도를 높이는 태도는? [교재 1장 1.2절 노년기 발달, [보충]]",
+    "o": [
+      "전통적 성역할 태도",
+      "가부장적 성역할 태도",
+      "근대적·평등적(양성적) 성역할 태도",
+      "전통주의 성역할 태도"
+    ],
+    "a": 2,
+    "h": "남녀 역할 구분에 유연하며 양성성에 기반한 성역할 태도입니다.",
+    "e": "근대적·평등적 성역할 태도는 양성성에 기반하며, 노년기 부부 갈등을 줄이고 결혼만족도와 정신건강을 높이는 데 기여합니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "웩슬러(Wechsler) 성인용 지능검사를 노인에게 실시한 연구(Salthouse) 결과로 가장 올바른 것은? [교재 1장 1.2절 노년기 발달, [보충]]",
+    "o": [
+      "어휘력은 70세까지 안정적이거나 증가하였다.",
+      "상식 문제 성능은 연령이 들수록 가장 먼저 파괴되었다.",
+      "산수 문제는 20세부터 지속적으로 급감하였다.",
+      "동작성 검사인 블록짜기와 그림차례 맞추기는 80세 이후에나 비로소 줄어들기 시작했다."
+    ],
+    "a": 0,
+    "h": "어휘력이나 상식 등 결정성 지능 영역은 고령에도 안정적으로 유지됩니다.",
+    "e": "솔트하우스의 지능검사 연구 분석에 따르면 어휘력은 70세까지 안정적이거나 증가하였고, 동작성 검사는 일찍부터 감소하였습니다."
+        }
+    ];</script>
+
+<!-- ④ 프로그램 본체: 수정하지 마세요. -->
+<script>
+    var allQuestions = [];   // 검사를 통과한 전체 문제
+    var questions = [];      // 지금 풀고 있는 문제 묶음(전체 또는 틀린 문제)
+    var curIdx = 0;
+    var wrongCount = 0;      // 현재 문제에서 틀린 횟수
+    var correctFirst = 0;    // 이번 회차에서 한 번에 맞힌 문제 수
+    var missed = [];         // 이번 회차에서 한 번이라도 틀린 문제
+
+    document.title = '노인복지론 퀴즈 [제' + LECTURE.no + '장]';
+    document.getElementById('lecture-title').textContent = '제' + LECTURE.no + '장: ' + LECTURE.title;
+
+    /* ---------- 데이터 검사 ---------- */
+    function validateQuizData(data) {
+        var errors = [];
+        var warnings = [];
+        var valid = [];
+
+        if (!Array.isArray(data) || data.length === 0) {
+            errors.push({ tag: '전체', text: 'quizData가 비어 있거나 배열([ ])이 아닙니다.' });
+            return { errors: errors, warnings: warnings, valid: valid };
+        }
+
+        data.forEach(function (item, i) {
+            var tag = 'Q' + (i + 1);
+            var problems = [];
+
+            if (!item || typeof item !== 'object') {
+                problems.push('문제가 { } 형식이 아닙니다.');
+            } else {
+                if (typeof item.q !== 'string' || !item.q.trim()) {
+                    problems.push('q(질문)가 없거나 비어 있습니다.');
+                }
+
+                var oOk = Array.isArray(item.o);
+                if (!oOk) {
+                    problems.push('o(보기)가 배열([ ])이 아닙니다.');
+                } else {
+                    if (item.o.length < 2) {
+                        problems.push('보기가 ' + item.o.length + '개뿐입니다. 2개 이상 필요합니다.');
+                    }
+                    var bad = item.o.some(function (x) { return typeof x !== 'string' || !x.trim(); });
+                    if (bad) {
+                        problems.push('보기 중에 비어 있거나 글자가 아닌 항목이 있습니다.');
+                    } else {
+                        var uniq = {};
+                        item.o.forEach(function (x) { uniq[x.trim()] = true; });
+                        if (Object.keys(uniq).length !== item.o.length) {
+                            problems.push('똑같은 보기가 2개 이상 있습니다.');
+                        }
+                    }
+                }
+
+                if (typeof item.a === 'string') {
+                    problems.push('a(정답 번호)가 따옴표로 감싸져 있습니다("' + item.a + '"). 따옴표 없는 숫자로 바꾸세요.');
+                } else if (!Number.isInteger(item.a)) {
+                    problems.push('a(정답 번호)가 없거나 숫자가 아닙니다.');
+                } else if (oOk && (item.a < 0 || item.a >= item.o.length)) {
+                    if (item.a === item.o.length) {
+                        problems.push('a가 ' + item.a + '입니다. 번호는 0부터 세므로 보기가 ' + item.o.length + '개면 0~' + (item.o.length - 1) + ' 중 하나여야 합니다. 1부터 센 것 같아요(' + item.a + ' → ' + (item.a - 1) + ').');
+                    } else {
+                        problems.push('a가 ' + item.a + '로 보기 범위(0~' + (item.o.length - 1) + ')를 벗어났습니다.');
+                    }
+                }
+
+                if (typeof item.h !== 'string' || !item.h.trim()) {
+                    problems.push('h(힌트)가 없거나 비어 있습니다.');
+                }
+                if (typeof item.e !== 'string' || !item.e.trim()) {
+                    problems.push('e(해설)가 없거나 비어 있습니다.');
+                }
+            }
+
+            if (problems.length) {
+                problems.forEach(function (t) { errors.push({ tag: tag, text: t }); });
+            } else {
+                valid.push(item);
+            }
+        });
+
+        
+
+        return { errors: errors, warnings: warnings, valid: valid };
+    }
+
+    /* ---------- 검사 결과 화면 ---------- */
+    function showProblemScreen(opts) {
+        document.getElementById('quiz-screen').style.display = 'none';
+        document.getElementById('problem-screen').style.display = 'block';
+        document.getElementById('problem-title').textContent = opts.title;
+        document.getElementById('problem-summary').textContent = opts.summary;
+
+        var list = document.getElementById('problem-list');
+        list.innerHTML = '';
+        opts.items.forEach(function (it) {
+            var li = document.createElement('li');
+            if (it.warn) li.className = 'warn';
+            var tag = document.createElement('span');
+            tag.className = 'tag';
+            tag.textContent = it.tag;
+            var txt = document.createElement('span');
+            txt.textContent = it.text;
+            li.appendChild(tag);
+            li.appendChild(txt);
+            list.appendChild(li);
+        });
+
+        var tips = document.getElementById('problem-tips');
+        tips.innerHTML = '';
+        if (opts.tips && opts.tips.length) {
+            tips.appendChild(document.createTextNode('자주 생기는 원인'));
+            var ul = document.createElement('ul');
+            opts.tips.forEach(function (t) {
+                var li = document.createElement('li');
+                li.textContent = t;
+                ul.appendChild(li);
+            });
+            tips.appendChild(ul);
+            tips.style.display = 'block';
+        } else {
+            tips.style.display = 'none';
+        }
+
+        var btn = document.getElementById('partial-btn');
+        if (opts.buttonText) {
+            btn.textContent = opts.buttonText;
+            btn.style.display = 'block';
+            btn.onclick = opts.onButton;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    function startQuiz(list) {
+        allQuestions = list;
+        document.getElementById('problem-screen').style.display = 'none';
+        beginRound(list);
+    }
+
+    // 한 회차 시작: 전체 문제 또는 틀린 문제만 받아서 처음부터 진행
+    function beginRound(list) {
+        questions = list;
+        curIdx = 0;
+        correctFirst = 0;
+        missed = [];
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('quiz-screen').style.display = 'block';
+        loadQuestion();
+    }
+
+    function init() {
+        // 데이터 문법 오류: ③ 블록이 아예 실행되지 못한 경우
+        if (typeof quizData === 'undefined') {
+            var items = window.__dataErrors.map(function (er) {
+                return { tag: er.line ? ('약 ' + er.line + '줄') : '오류', text: er.msg };
+            });
+            if (!items.length) items.push({ tag: '오류', text: 'quizData를 찾을 수 없습니다. const quizData = [ ... ]; 형태가 맞는지 확인하세요.' });
+            showProblemScreen({
+                title: '⚠️ 퀴즈 데이터를 읽지 못했어요',
+                summary: '데이터 부분에 문법 오류가 있어서 프로그램이 멈췄습니다. 아래 줄 근처를 확인하세요.',
+                items: items,
+                tips: [
+                    '문장 안에 큰따옴표(")가 들어 있음 → 작은따옴표(\')로 바꾸기',
+                    '문제와 문제 사이 쉼표(,) 빠짐, 또는 맨 끝의 ]; 가 지워짐',
+                    '문장 한가운데에서 줄이 바뀜 (한 문장은 한 줄로)',
+                    '붙여넣은 글에 // 가 포함되어 뒷부분이 주석 처리됨'
+                ]
+            });
+            return;
+        }
+
+        var result = validateQuizData(quizData);
+
+        if (result.errors.length === 0 && result.warnings.length === 0) {
+            startQuiz(result.valid);
+            return;
+        }
+
+        var items = result.errors.map(function (er) { return { tag: er.tag, text: er.text }; })
+            .concat(result.warnings.map(function (w) { return { tag: w.tag, text: w.text, warn: true }; }));
+
+        var badCount = (Array.isArray(quizData) ? quizData.length : 0) - result.valid.length;
+        var hasErrors = result.errors.length > 0;
+
+        showProblemScreen({
+            title: hasErrors ? '⚠️ 고칠 곳이 ' + result.errors.length + '군데 있어요' : '확인해 볼 곳이 있어요',
+            summary: !hasErrors
+                ? '오류는 아니지만 한 번 확인해 보세요.'
+                : (badCount > 0
+                    ? '전체 ' + quizData.length + '문제 중 ' + badCount + '문제에 문제가 있습니다. 데이터를 고치고 새로고침하세요.'
+                    : '퀴즈 데이터를 확인하고 새로고침하세요.'),
+            items: items,
+            tips: hasErrors ? [
+                '정답 번호 a는 따옴표 없는 숫자이고, 첫 번째 보기가 0입니다',
+                '문제마다 type, q, o, a, h, e 가 모두 있어야 합니다'
+            ] : null,
+            buttonText: result.valid.length > 0
+                ? (hasErrors ? '오류 없는 ' + result.valid.length + '문제만 먼저 풀기' : '그대로 시작하기')
+                : null,
+            onButton: function () { startQuiz(result.valid); }
+        });
+    }
+
+    /* ---------- 퀴즈 진행 ---------- */
+    function loadQuestion() {
+        wrongCount = 0;
+        var q = questions[curIdx];
+
+        document.getElementById('progress-text').textContent = (curIdx + 1) + ' / ' + questions.length;
+        updateScore();
+        window.scrollTo(0, 0);
+        document.getElementById('question-type').textContent = q.type || '일반문제';
+        document.getElementById('question-text').textContent = 'Q' + (allQuestions.indexOf(q) + 1) + '. ' + q.q;
+
+        var container = document.getElementById('options-container');
+        container.innerHTML = '';
+        q.o.forEach(function (opt, idx) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'option-btn';
+            btn.textContent = opt;
+            btn.onclick = function () { checkAnswer(idx, btn); };
+            container.appendChild(btn);
+        });
+
+        document.getElementById('hint-box').style.display = 'none';
+        document.getElementById('exp-box').style.display = 'none';
+        document.getElementById('next-btn').style.display = 'none';
+    }
+
+    function checkAnswer(idx, btn) {
+        var q = questions[curIdx];
+        var allBtns = document.querySelectorAll('.option-btn');
+
+        if (idx === q.a) {
+            btn.classList.add('correct');
+            allBtns.forEach(function (b) { b.style.pointerEvents = 'none'; });
+            if (wrongCount === 0) { correctFirst++; updateScore(); }
+            showExplanation();
+        } else {
+            wrongCount++;
+            if (wrongCount === 1) missed.push(q);
+            btn.classList.add('wrong');
+            btn.style.pointerEvents = 'none';
+
+            if (wrongCount === 1) {
+                document.getElementById('hint-text').textContent = q.h;
+                document.getElementById('hint-box').style.display = 'block';
+            } else {
+                allBtns[q.a].classList.add('correct');
+                allBtns.forEach(function (b) { b.style.pointerEvents = 'none'; });
+                showExplanation();
+            }
+        }
+    }
+
+    function showExplanation() {
+        var q = questions[curIdx];
+        document.getElementById('exp-text').textContent = q.e;
+        document.getElementById('exp-box').style.display = 'block';
+        document.getElementById('next-btn').style.display = 'block';
+    }
+
+    // 풀던 중에 누르면 한 번 물어봅니다. (묻지 않으려면 if 문 세 줄을 지우세요)
+    function goList() {
+        if (curIdx > 0 && !confirm('퀴즈를 그만하고 목록으로 갈까요?\n지금까지 푼 기록은 저장되지 않아요.')) return;
+        location.href = 'index.html';
+    }
+
+    function nextQuestion() {
+        curIdx++;
+        if (curIdx < questions.length) {
+            loadQuestion();
+        } else {
+            showResult();
+        }
+    }
+
+    /* ---------- 점수와 다시 풀기 ---------- */
+    // 한 번에 맞힌 문제만 점수로 셉니다. (힌트를 본 뒤 맞히면 점수에 넣지 않아요)
+    function updateScore() {
+        document.getElementById('score-text').textContent = '한 번에 맞힌 문제 ' + correctFirst + '개';
+    }
+
+    function showResult() {
+        var total = questions.length;
+        var score = Math.round(correctFirst / total * 100);
+        var isRetry = total < allQuestions.length;
+
+        document.getElementById('quiz-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+
+        document.getElementById('result-title').textContent = isRetry ? '🔁 틀린 문제 복습을 마쳤습니다!' : '🎊 학습을 마쳤습니다!';
+        document.getElementById('result-score').textContent = score + '점';
+        document.getElementById('result-detail').textContent =
+            (isRetry ? '복습한 ' : '전체 ') + total + '문제 중 한 번에 맞힌 문제 ' + correctFirst + '개 (100점 만점)';
+
+        var msg;
+        if (score >= 90) msg = '진짜 수고 많이 하셨습니다, 학우님! A+ 당근 🥕';
+        else if (score >= 70) msg = '잘하고 계세요! 틀린 문제만 한 번 더 풀면 더 단단해져요.';
+        else msg = '괜찮아요. 틀린 문제를 해설과 함께 다시 풀어 보면 금방 늘어요.';
+        document.getElementById('result-msg').textContent = msg;
+
+        var details = document.getElementById('missed-details');
+        var list = document.getElementById('missed-list');
+        list.innerHTML = '';
+        missed.forEach(function (m) {
+            var li = document.createElement('li');
+            li.value = allQuestions.indexOf(m) + 1;
+            li.textContent = m.q;
+            list.appendChild(li);
+        });
+        details.open = false;
+        details.style.display = missed.length ? 'block' : 'none';
+        document.getElementById('missed-summary').textContent = '이번에 틀린 문제 ' + missed.length + '개 보기';
+
+        var retryBtn = document.getElementById('retry-missed-btn');
+        retryBtn.textContent = '❌ 틀린 문제만 다시 풀기 (' + missed.length + '문제)';
+        retryBtn.style.display = missed.length ? 'block' : 'none';
+
+        window.scrollTo(0, 0);
+    }
+
+    function retryAll() { beginRound(allQuestions); }
+    function retryMissed() { if (missed.length) beginRound(missed.slice()); }
+
+    init();
+</script>
+</body>
+</html>

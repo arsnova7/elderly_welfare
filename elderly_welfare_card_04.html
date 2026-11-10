@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>노인복지론 플래시카드</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* 눈이 편한 차분한 초록 계열 (index.html의 플래시카드 색과 맞춤) */
+    body {
+        font-family: 'Pretendard', sans-serif;
+        background: linear-gradient(135deg, #2f7d5b 0%, #1b4332 100%);
+        background-attachment: fixed;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .container { width: 100%; max-width: 850px; margin: auto; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+    .header { text-align: center; color: white; margin-bottom: 20px; }
+    .header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 6px; }
+    .header .sub { font-size: 1.05rem; font-weight: 600; opacity: 0.92; margin-bottom: 10px; word-break: keep-all; }
+    .header .count { font-size: 1.1rem; font-weight: 700; }
+    .progress { max-width: 340px; height: 6px; margin: 12px auto 0; background: rgba(255,255,255,0.25); border-radius: 3px; overflow: hidden; }
+    #bar { height: 100%; width: 0; background: white; border-radius: 3px; transition: width 0.3s; }
+
+    /* 카드 */
+    .stage { perspective: 1400px; margin: 12px 0; }
+    .card {
+        position: relative;
+        width: 100%;
+        height: min(460px, 60vh);
+        height: min(460px, 60dvh);
+        min-height: 320px;
+        cursor: pointer;
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .card.flipped { transform: rotateY(180deg); }
+    .card:focus-visible { outline: 3px solid #fde68a; outline-offset: 4px; }
+
+    .side {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 20px 26px 18px;
+        border-radius: 20px;
+        overflow-y: auto;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        word-break: keep-all;
+        white-space: pre-line;
+    }
+    .front { background: white; color: #1e293b; }
+    .back { background: #f0f7f2; color: #1b4332; transform: rotateY(180deg); }
+
+    .meta { display: flex; align-items: center; justify-content: space-between; min-height: 28px; white-space: normal; }
+    .chip { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; }
+    .chip-q { background: #f1f5f9; color: #475569; }
+    .chip-a { background: #cfe8d8; color: #1b4332; }
+    .stars { font-size: 0.95rem; font-weight: 800; color: #1f6b46; background: #e3f1e8; padding: 3px 10px; border-radius: 20px; display: none; }
+
+    /* 내용이 길어도 위쪽이 잘리지 않도록 margin:auto로 가운데 맞춤 */
+    .body { margin: auto; padding: 14px 0; text-align: center; font-size: 1.4rem; font-weight: 700; line-height: 1.55; }
+    .back .body { font-size: 1.55rem; font-weight: 800; }
+    .src { min-height: 1.2em; text-align: center; font-size: 0.85rem; color: #64748b; white-space: normal; }
+
+    .tip { text-align: center; color: rgba(255,255,255,0.85); font-size: 0.9rem; margin: 4px 0 14px; word-break: keep-all; }
+
+    .controls { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 12px; }
+    .btn { padding: 18px 10px; border: none; border-radius: 12px; background: white; color: #1f6b46; font-family: inherit; font-size: 1.05rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .btn:hover { background: #f1f5f9; transform: translateY(-2px); }
+    .btn:focus-visible { outline: 3px solid #fde68a; outline-offset: 2px; }
+
+    /* 데이터 검사 결과 화면 */
+    .problem-card { display: none; background: white; border-radius: 15px; padding: 28px; border-left: 6px solid #dc3545; box-shadow: 0 10px 30px rgba(0,0,0,0.25); color: #1e293b; }
+    .problem-card h2 { margin: 0 0 8px; font-size: 1.3rem; }
+    .problem-card .summary { margin: 0 0 16px; color: #55657d; line-height: 1.6; word-break: keep-all; }
+    .problem-list { list-style: none; margin: 0 0 8px; padding: 0; }
+    .problem-list li { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid #e0e7f1; line-height: 1.5; word-break: keep-all; }
+    .problem-list .tag { flex: none; min-width: 3.2rem; font-weight: 800; color: #dc3545; }
+    .problem-card .tips { margin: 12px 0 0; padding: 14px; background: #f3f6fa; border-radius: 10px; font-size: 0.92rem; line-height: 1.6; color: #2f3640; word-break: keep-all; }
+    .problem-card .tips ul { margin: 6px 0 0; padding-left: 20px; }
+    #partial-btn { width: 100%; padding: 16px; margin-top: 16px; border: none; border-radius: 10px; background: #2e7d5b; color: white; font-weight: bold; font-size: 1.05rem; cursor: pointer; font-family: inherit; }
+    #partial-btn:focus-visible { outline: 3px solid #1e293b; outline-offset: 2px; }
+
+    @media (max-width: 600px) {
+        body { padding: 14px; }
+        .header h1 { font-size: 1.6rem; }
+        .side { padding: 16px 18px 14px; }
+        .body { font-size: 1.2rem; }
+        .back .body { font-size: 1.3rem; }
+        .controls { grid-template-columns: 1fr 1fr; }
+        .controls .btn-list { grid-column: 1 / -1; }
+        .btn { padding: 16px 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .card, #bar, .btn { transition: none; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <div id="problem-screen" class="problem-card" role="alert">
+        <h2 id="problem-title"></h2>
+        <p id="problem-summary" class="summary"></p>
+        <ul id="problem-list" class="problem-list"></ul>
+        <div id="problem-tips" class="tips"></div>
+        <button id="partial-btn" type="button"></button>
+    </div>
+
+    <div id="card-screen">
+        <div class="header">
+            <h1 id="page-title">플래시카드</h1>
+            <p class="sub" id="page-sub"></p>
+            <p class="count"><span id="current">1</span> / <span id="total">0</span></p>
+            <div class="progress"><div id="bar"></div></div>
+        </div>
+
+        <div class="stage">
+            <div class="card" id="flashcard" role="button" tabindex="0" aria-label="카드 뒤집기">
+                <div class="side front">
+                    <div class="meta"><span class="chip chip-q">질문</span><span class="stars" id="stars"></span></div>
+                    <div class="body" id="question"></div>
+                    <div class="src" id="source"></div>
+                </div>
+                <div class="side back">
+                    <div class="meta"><span class="chip chip-a">정답</span></div>
+                    <div class="body" id="answer"></div>
+                    <div class="src"></div>
+                </div>
+            </div>
+        </div>
+
+        <p class="tip">카드를 누르면 정답이 보여요. 화살표 키나 좌우로 밀어서 넘길 수 있어요.</p>
+
+        <div class="controls">
+            <button class="btn" type="button" onclick="prevCard()">이전</button>
+            <button class="btn" type="button" onclick="nextCard()">다음</button>
+            <button class="btn btn-list" type="button" onclick="location.href='index.html'">목록으로 돌아가기</button>
+        </div>
+    </div>
+</div>
+
+<!-- ① 오류 수집용: 반드시 맨 위(②, ③보다 앞)에 두세요. 수정하지 마세요. -->
+<script>
+    window.__dataErrors = [];
+    window.addEventListener('error', function (e) {
+        window.__dataErrors.push({ msg: e.message, line: e.lineno });
+    });
+</script>
+
+<!-- ② 장 설정: 새 장을 만들 때 번호(1~15)와 제목만 고치세요. -->
+<script>
+    const LECTURE = { no: 4, title: "노인문제" };
+</script>
+
+<!-- ③ 카드 데이터: 노트북LM이 만든 const cards = [...]; 를 통째로 덮어쓰세요.
+     아래 2장은 화면 확인용 예시입니다. 덮어쓸 때 이 예시도 같이 지우세요.
+     카드마다 q(질문)와 a(정답)가 모두 있어야 합니다. -->
+<script>
+    const cards = [
+        {"q": "★★★ 후천적으로 뇌의 질환이나 손상에 의해 기억력을 포함한 인지기능이 지속적으로 쇠퇴하여 일상생활에 지장을 주는 복합적 증후군은? [교재 4장 4.1절 치매노인, 워크북 4장, 기말 연습문제정리 4강]",
+    "a": "치매(Dementia)"
+  },
+  {
+    "q": "★★★ 치매를 유발하는 가장 대표적인 원인 질환으로, 베타 아밀로이드 침착과 신경원섬유 엉킴으로 점진적 뇌 위축이 진행되는 질환은? [교재 4장 4.1절 치매노인, 워크북 4장, 2015년 기출]",
+    "a": "알츠하이머병(Alzheimer's disease)"
+  },
+  {
+    "q": "★★★ 뇌졸중, 뇌경색 등 뇌혈관 질환이나 뇌혈류 장애로 인해 인지기능 감퇴가 계단식으로 갑자기 악화되는 치매 형태는? [교재 4장 4.1절 치매노인, 워크북 4장, 2016년 기출]",
+    "a": "혈관성 치매(Vascular dementia)"
+  },
+  {
+    "q": "★★★ 치매 환자가 해 질 녘이나 밤이 되면 심한 불안, 초조, 환각, 배회 증상을 보이는 대표적 행동심리증상(BPSD)은? [교재 4장 4.1절 치매노인, 기말 연습문제정리 4강]",
+    "a": "일몰증후군(석양증후군, Sundowning syndrome)"
+  },
+  {
+    "q": "★★★ 치매 증상 중 운동 마비가 없음에도 옷 입기, 숟가락질 등 이전의 목적 있는 신체 동작을 수행하지 못하는 장애는? [교재 4장 4.1절 치매노인, 2013년 기출]",
+    "a": "실행증(Apraxia)"
+  },
+  {
+    "q": "★★★ 감각기관의 이상이 없음에도 익숙한 사물, 가족의 얼굴, 장소의 의미를 파악하거나 인지하지 못하는 증상은? [교재 4장 4.1절 치매노인, 2014년 기출]",
+    "a": "실인증(Agnosia)"
+  },
+  {
+    "q": "★★★ 부양의무자가 노인의 의식주, 의료, 생계 지원 등 적절한 보호 의무를 거부·불이행하여 노인을 위험에 방치하는 학대는? [교재 4장 4.2절 노인학대, 워크북 4장, 2017년 기출]",
+    "a": "방임(Neglect)"
+  },
+  {
+    "q": "★★★ 노인 스스로 생존에 필요한 의식주, 약 복용, 치료 등 최소한의 기본 행위를 포기·거부하여 생명이 위협받는 학대는? [교재 4장 4.2절 노인학대, 워크북 4장, 2018년 기출]",
+    "a": "자기방임(Self-neglect)"
+  },
+  {
+    "q": "★★★ 보호자가 노인을 버리거나 요양병원·시설 등에 입원시킨 후 연락을 끊고 행방불명되게 만드는 방임 학대 행위는? [교재 4장 4.2절 노인학대, 2014년 기출]",
+    "a": "유기(Abandonment)"
+  },
+  {
+    "q": "★★★ 노인의 재산, 금융자산, 수당 등을 정당한 사유 없이 부당하게 취득하거나 유용하는 학대 유형은? [교재 4장 4.2절 노인학대, 워크북 4장]",
+    "a": "경제적 학대(재산상 학대)"
+  },
+  {
+    "q": "★★★ 아동기 폭력 경험이나 관찰이 성인이 된 후 부모에 대한 학대 행동으로 재현·모델링된다고 설명하는 이론은? [교재 4장 4.2절 노인학대, 워크북 4장, 2017년 기출]",
+    "a": "폭력의 세대간 전이 이론(사회학습이론)"
+  },
+  {
+    "q": "★★★ 「노인복지법」에 근거하여 학대 신고 접수(1577-1389), 현장 조사, 예방 교육 및 학대피해노인 쉼터를 운영하는 전담 기관은? [교재 4장 4.2절 노인학대, 워크북 4장, 2018년 기출]",
+    "a": "노인보호전문기관"
+  },
+  {
+    "q": "★★★ 의료인, 사회복지전담공무원, 노인복지시설 종사자 등 직무상 학대를 알게 된 즉시 신고해야 하는 법적 의무 직군은? [교재 4장 4.2절 노인학대, 2016년 기출]",
+    "a": "노인학대 신고의무자"
+  },
+  {
+    "q": "★★★ 한국 노인 빈곤 문제의 가장 주된 구조적·제도적 원인은? [교재 4장 4.3절 노인빈곤, 기말 연습문제정리 4강, 2019년 기출]",
+    "a": "공적이전소득(국민연금 등) 비중이 낮고 사적이전소득 및 근로소득 의존도가 높기 때문"
+  },
+  {
+    "q": "★★★ 한국의 65세 이상 노인 중 국민연금 가입 기간이 20년 이상인 완충 가입자 비율 수준은? [교재 4장 4.3절 노인빈곤]",
+    "a": "3.65% 불과"
+  },
+  {
+    "q": "★★★ 65세 이상 소득 하위 70% 노인에게 무의무 무자산조사 성격으로 지급되는 조세 재원 공적 수당은? [교재 4장 4.3절 노인빈곤]",
+    "a": "기초연금"
+  },
+  {
+    "q": "★★★ 노인학대 예방과 사회적 경각심 제고를 위해 지정된 법정 기념일(6월 15일)의 명칭은? [교재 4장 4.2절 노인학대]",
+    "a": "노인학대 예방의 날"
+  },
+  {
+    "q": "★★☆ 톰 키트우드(Tom Kitwood)가 주창하였으며, 치매 환자를 질환이 아닌 존엄과 생애사를 지닌 인격체로 존중하는 돌봄 방식은? [교재 4장 4.1절 치매노인]",
+    "a": "인간중심 돌봄(Person-Centered Care, PCC)"
+  },
+  {
+    "q": "★★☆ 치매 환자에게 나타나는 망상, 환각, 배회, 공격성, 불안, 수면 장애 등 행동·정신적증후군을 뜻하는 약어는? [교재 4장 4.1절 치매노인]",
+    "a": "BPSD(치매의 행동심리증상)"
+  },
+  {
+    "q": "★★☆ 치매 환자가 자신이 물건을 둔 위치를 잊었을 때 가장 가까운 보호자를 의심하고 비난하는 흔한 망상은? [교재 4장 4.1절 치매노인]",
+    "a": "도둑맞음 망상(도둑망상)"
+  },
+  {
+    "q": "★★☆ 급성으로 발생하며 주의력 장애와 의식의 동요를 보이나 원인 질환 및 약물 치료 시 회복 가능한 가역적 상태는? [교재 4장 4.1절 치매노인]",
+    "a": "섬망(Delirium)"
+  },
+  {
+    "q": "★★☆ 2014년 장기요양 등급에 신설되어 경증 치매노인에게 인지활동형 방문요양 서비스를 제공하는 등급은? [교재 4장 4.1절 치매노인]",
+    "a": "장기요양 5등급(치매특별등급)"
+  },
+  {
+    "q": "★★☆ 2018년 신설되어 신체 기능 수급 기준에 미달하더라도 치매가 확인된 노인에게 주간보호 등을 지원하는 등급은? [교재 4장 4.1절 치매노인]",
+    "a": "인지지원등급"
+  },
+  {
+    "q": "★★☆ 치매국가책임제에 따라 전국 시·군·구 보건소에 설치된 1:1 상담, 조기검진, 치매 쉼터 전담 기관은? [교재 4장 4.1절 치매노인, 2019년 기출]",
+    "a": "치매안심센터"
+  },
+  {
+    "q": "★★☆ 노인이 건강과 재산을 상실하여 자녀에게 제공할 교환 자원이 없을 때 가해자에게 의존하게 되어 학대에 노출된다고 보는 이론은? [교재 4장 4.2절 노인학대]",
+    "a": "사회적 교환이론"
+  },
+  {
+    "q": "★★☆ 부양자의 수면 부족, 경제적 곤란, 장기 돌봄 피로 등 스트레스 누적이 한계를 넘어 학대로 발현된다는 이론은? [교재 4장 4.2절 노인학대]",
+    "a": "상황적 스트레스 이론"
+  },
+  {
+    "q": "★★☆ 학대 피해 노인을 가해자로부터 긴급히 응급 분리하여 숙식, 심리 상담, 의료를 지원하는 비공개 전담 시설은? [교재 4장 4.2절 노인학대]",
+    "a": "학대피해노인 전용쉼터"
+  },
+  {
+    "q": "★★☆ 보건복지부 조사 결과 노인학대가 발생하는 가장 주된 장소(80% 이상)와 주요 가해자 유형은? [교재 4장 4.2절 노인학대]",
+    "a": "장소: 가정 내 / 가해자: 친족(배우자, 아들, 딸)"
+  },
+  {
+    "q": "★★☆ 노인학대 신고의무자가 정당한 사유 없이 직무상 학대를 보고하지 않았을 때 부과되는 법적 과태료 기준은? [교재 4장 4.2절 노인학대]",
+    "a": "500만 원 이하의 과태료"
+  },
+  {
+    "q": "★★☆ 자가 주택을 금융기관에 담보로 제공하고 평생 또는 일정 기간 매월 연금을 지급받는 역모기지 제도는? [교재 4장 4.3절 노인빈곤]",
+    "a": "주택연금(한국주택금융공사)"
+  },
+  {
+    "q": "★★☆ 한국 노동자의 주된 일자리에서의 평균 퇴직 연령 수치는? [교재 4장 4.3절 노인빈곤]",
+    "a": "평균 49.4세"
+  },
+  {
+    "q": "★★☆ 65세 이상 한국 노인의 치매 유병률 수준은 대략 어느 정도인가? [교재 4장 4.1절 치매노인]",
+    "a": "약 10% 내외 (10명 중 1명 꼴)"
+  },
+  {
+    "q": "★★☆ 사건의 세부 사항을 잊었으나 힌트를 주면 기억해 내는 건망증과 달리, 경험 자체를 잊고 힌트에도 기억 못하는 질환은? [교재 4장 4.1절 치매노인]",
+    "a": "치매(Dementia)"
+  },
+  {
+    "q": "★★☆ OECD 기준 한국의 상대적 노인빈곤율 수치(40% 대) 및 노인 자살률의 OECD 국가 간 위치는? [교재 4장 4.3절 노인빈곤, 2018년 기출]",
+    "a": "OECD 회원국 중 독보적 1위(최상위)"
+  },
+  {
+    "q": "★☆☆ 알츠하이머병 환자 뇌 조직에서 발견되는 베타 아밀로이드 침착물과 타우 단백질 꼬임 현상의 명치는? [교재 4장 4.1절 치매노인]",
+    "a": "신경반(amyloid plaques) & 신경원섬유 엉킴(tangles)"
+  },
+  {
+    "q": "★☆☆ 치매 환자의 시계, 달력, 친숙한 사진 배치를 통해 시간, 장소, 사람에 대한 인식 능력을 유지시키는 개입은? [교재 4장 4.1절 치매노인]",
+    "a": "지남력(Orientation) 유지 및 현실인식 훈련"
+  },
+  {
+    "q": "★☆☆ 치매 환자의 길 잃음과 가출 사고를 방지하기 위해 보급되는 GPS 단백기 및 옷 부착용 장비는? [교재 4장 4.1절 치매노인]",
+    "a": "배회감지기 및 배회 가능 어르신 인식표"
+  },
+  {
+    "q": "★☆☆ 치매 BPSD 증상에 대해 음악, 미술, 회상, 환경 개선 등 정서적 안정을 유도하는 비약물 치료 기법은? [교재 4장 4.1절 치매노인]",
+    "a": "비약물적 치료 개입(회상요법, 예술치료 등)"
+  },
+  {
+    "q": "★☆☆ 치매 환자가 인지장애로 인해 자신이 병에 걸렸음을 깨닫지 못하거나 인정하지 않는 상태는? [교재 4장 4.1절 치매노인]",
+    "a": "병식 결여(Lack of Insight)"
+  },
+  {
+    "q": "★☆☆ 노인에게 성적 수치심을 유발하는 폭언, 노출, 강제적 성 접촉 등을 가하는 학대 유형은? [교재 4장 4.2절 노인학대]",
+    "a": "성적 학대(Sexual abuse)"
+  },
+  {
+    "q": "★☆☆ 노인에게 언어적 폭언, 모욕, 위협, 무시 등으로 심리적 고통과 유배감을 유발하는 학대 유형은? [교재 4장 4.2절 노인학대, 워크북 4장]",
+    "a": "정서적 학대"
+  },
+  {
+    "q": "★☆☆ 노인에게 신체적 폭행, 구타, 억압, 묶기 등의 해를 가하는 학대 유형은? [교재 4장 4.2절 노인학대, 워크북 4장]",
+    "a": "신체적 학대"
+  },
+  {
+    "q": "★☆☆ 학대 가정이 지역사회 및 외부 지지체계와 단절되어 있을수록 부양 피로가 가중되고 학대가 은폐된다는 이론은? [교재 4장 4.2절 노인학대]",
+    "a": "사회적 고립 이론"
+  },
+  {
+    "q": "★☆☆ 노인학대 신고 및 24시간 긴급 상담을 위한 전용 전화번호는? [교재 4장 4.2절 노인학대]",
+    "a": "1577-1389 (또는 보건복지상담센터 129)"
+  },
+  {
+    "q": "★☆☆ 노인 빈곤 해소를 위해 70세 이상 정년 연장과 함께 고려되는 노동시장 제도는? [교재 4장 4.3절 노인빈곤]",
+    "a": "탄력 퇴직제(유연 퇴직제)"
+  },
+  {
+    "q": "★☆☆ 노후 소득보장에서 시장 임금이나 사적 이전이 아닌 국가 공적 제도를 통해 삶을 보장받는 수준 지표는? [교재 4장 4.3절 노인빈곤]",
+    "a": "탈상품화(De-commodification) 수준"
+  },
+  {
+    "q": "★☆☆ 알츠하이머병 치매의 완만한 진행과 대비되는 혈관성 치매의 독특한 악화 경과 패턴은? [교재 4장 4.1절 치매노인]",
+    "a": "계단식(step-wise) 악화 패턴"
+  },
+  {
+    "q": "★☆☆ 치매, 노인학대, 노인빈곤이 상호 작용하여 개인과 가족을 위험에 빠뜨리는 구조를 일컫는 용어는? [교재 4장 전체]",
+    "a": "노인 3대 악순환 문제"
+  },
+  {
+    "q": "★☆☆ 노인문제를 노인 개인의 무능력 탓이 아닌 사회적 위험으로 규정하고 권리 주체로 세우는 핵심 관점은? [교재 4장 전체]",
+    "a": "선배시민(Senior Citizen) 관점 및 보편적 사회권 강화"
+  },
+  {
+    "q": "★☆☆ 치매 환자가 식사를 마쳤음에도 밥을 안 줬다고 주장할 때 권장되는 바람직한 대처 방식은? [교재 4장 4.1절 치매노인]",
+    "a": "다투거나 야단치지 않고 비대립적 태도로 소량의 간식을 유연하게 제공하기"}
+    ];</script>
+
+<!-- ④ 프로그램 본체: 수정하지 마세요. -->
+<script>
+    var deck = [];
+    var cur = 0;
+    var swapTimer = null;
+
+    document.title = '제' + LECTURE.no + '장 - ' + LECTURE.title;
+    document.getElementById('page-title').textContent = '제' + LECTURE.no + '장 플래시카드';
+    document.getElementById('page-sub').textContent = LECTURE.title;
+
+    var cardEl = document.getElementById('flashcard');
+
+    function reduceMotion() {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+
+    /* ---------- 데이터 검사 ---------- */
+    function validateCards(data) {
+        var errors = [];
+        var valid = [];
+
+        if (!Array.isArray(data) || data.length === 0) {
+            errors.push({ tag: '전체', text: 'cards가 비어 있거나 배열([ ])이 아닙니다.' });
+            return { errors: errors, valid: valid };
+        }
+
+        data.forEach(function (item, i) {
+            var tag = (i + 1) + '번 카드';
+            var problems = [];
+            if (!item || typeof item !== 'object') {
+                problems.push('카드가 { } 형식이 아닙니다.');
+            } else {
+                if (typeof item.q !== 'string' || !item.q.trim()) problems.push('q(질문)가 없거나 비어 있습니다.');
+                if (typeof item.a !== 'string' || !item.a.trim()) problems.push('a(정답)가 없거나 비어 있습니다.');
+            }
+            if (problems.length) {
+                problems.forEach(function (t) { errors.push({ tag: tag, text: t }); });
+            } else {
+                valid.push(item);
+            }
+        });
+
+        return { errors: errors, valid: valid };
+    }
+
+    function showProblemScreen(opts) {
+        document.getElementById('card-screen').style.display = 'none';
+        document.getElementById('problem-screen').style.display = 'block';
+        document.getElementById('problem-title').textContent = opts.title;
+        document.getElementById('problem-summary').textContent = opts.summary;
+
+        var list = document.getElementById('problem-list');
+        list.innerHTML = '';
+        opts.items.forEach(function (it) {
+            var li = document.createElement('li');
+            var tag = document.createElement('span');
+            tag.className = 'tag';
+            tag.textContent = it.tag;
+            var txt = document.createElement('span');
+            txt.textContent = it.text;
+            li.appendChild(tag);
+            li.appendChild(txt);
+            list.appendChild(li);
+        });
+
+        var tips = document.getElementById('problem-tips');
+        tips.innerHTML = '';
+        if (opts.tips && opts.tips.length) {
+            tips.appendChild(document.createTextNode('자주 생기는 원인'));
+            var ul = document.createElement('ul');
+            opts.tips.forEach(function (t) {
+                var li = document.createElement('li');
+                li.textContent = t;
+                ul.appendChild(li);
+            });
+            tips.appendChild(ul);
+            tips.style.display = 'block';
+        } else {
+            tips.style.display = 'none';
+        }
+
+        var btn = document.getElementById('partial-btn');
+        if (opts.buttonText) {
+            btn.textContent = opts.buttonText;
+            btn.style.display = 'block';
+            btn.onclick = opts.onButton;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    function startDeck(list) {
+        deck = list;
+        cur = 0;
+        document.getElementById('problem-screen').style.display = 'none';
+        document.getElementById('card-screen').style.display = 'block';
+        render();
+    }
+
+    function init() {
+        // 데이터 문법 오류: ③ 블록이 아예 실행되지 못한 경우
+        if (typeof cards === 'undefined') {
+            var items = window.__dataErrors.map(function (er) {
+                return { tag: er.line ? ('약 ' + er.line + '줄') : '오류', text: er.msg };
+            });
+            if (!items.length) items.push({ tag: '오류', text: 'cards를 찾을 수 없습니다. const cards = [ ... ]; 형태가 맞는지 확인하세요.' });
+            showProblemScreen({
+                title: '⚠️ 카드 데이터를 읽지 못했어요',
+                summary: '데이터 부분에 문법 오류가 있어서 프로그램이 멈췄습니다. 아래 줄 근처를 확인하세요.',
+                items: items,
+                tips: [
+                    '문장 안에 큰따옴표(")가 들어 있음 → 작은따옴표(\')로 바꾸기',
+                    '카드와 카드 사이 쉼표(,) 빠짐, 또는 맨 끝의 ]; 가 지워짐',
+                    '문장 한가운데에서 줄이 바뀜 (한 문장은 한 줄로)',
+                    '붙여넣은 글에 // 가 포함되어 뒷부분이 주석 처리됨'
+                ]
+            });
+            return;
+        }
+
+        var result = validateCards(cards);
+
+        if (result.errors.length === 0) {
+            startDeck(result.valid);
+            return;
+        }
+
+        var total = Array.isArray(cards) ? cards.length : 0;
+        var badCount = total - result.valid.length;
+        showProblemScreen({
+            title: '⚠️ 고칠 곳이 ' + result.errors.length + '군데 있어요',
+            summary: badCount > 0
+                ? '전체 ' + total + '장 중 ' + badCount + '장에 문제가 있습니다. 데이터를 고치고 새로고침하세요.'
+                : '카드 데이터를 확인하고 새로고침하세요.',
+            items: result.errors,
+            tips: ['카드마다 q(질문)와 a(정답)가 모두 있어야 하고, 둘 다 글자(따옴표로 감싼 문장)여야 합니다'],
+            buttonText: result.valid.length > 0 ? '오류 없는 ' + result.valid.length + '장만 먼저 보기' : null,
+            onButton: function () { startDeck(result.valid); }
+        });
+    }
+
+    /* ---------- 카드 표시 ---------- */
+    // 질문 앞의 ★(중요도)와 끝의 [출처]를 따로 떼어 작은 표식으로 보여줍니다.
+    function parseQuestion(raw) {
+        var text = raw.trim();
+        var stars = '';
+        var src = '';
+        var m = text.match(/^([★☆]{1,5})\s*/);
+        if (m) { stars = m[1]; text = text.slice(m[0].length); }
+        var s = text.match(/\s*\[([^\]]{1,120})\]\s*$/);
+        if (s) { src = s[1]; text = text.slice(0, s.index); }
+        if (!text.trim()) { text = raw.trim(); stars = ''; src = ''; }
+        return { stars: stars, src: src, text: text };
+    }
+
+    function render() {
+        var c = deck[cur];
+        var p = parseQuestion(c.q);
+
+        document.getElementById('question').textContent = p.text;
+        document.getElementById('answer').textContent = c.a.trim();
+        document.getElementById('source').textContent = p.src ? '출처: ' + p.src : '';
+
+        var starsEl = document.getElementById('stars');
+        if (p.stars) {
+            var filled = (p.stars.match(/★/g) || []).length;
+            starsEl.textContent = p.stars;
+            starsEl.setAttribute('aria-label', '중요도 ' + p.stars.length + '개 중 ' + filled + '개');
+            starsEl.style.display = 'inline-block';
+        } else {
+            starsEl.style.display = 'none';
+        }
+
+        document.getElementById('current').textContent = cur + 1;
+        document.getElementById('total').textContent = deck.length;
+        document.getElementById('bar').style.width = ((cur + 1) / deck.length * 100) + '%';
+    }
+
+    function flip() { cardEl.classList.toggle('flipped'); }
+
+    function go(delta) {
+        cur = (cur + delta + deck.length) % deck.length;
+        clearTimeout(swapTimer);
+        if (cardEl.classList.contains('flipped') && !reduceMotion()) {
+            // 먼저 카드를 앞면으로 돌리고, 옆면이 되어 안 보일 때 내용을 바꿔서 다음 정답이 미리 비치지 않게 함
+            cardEl.classList.remove('flipped');
+            swapTimer = setTimeout(render, 300);
+        } else {
+            cardEl.classList.remove('flipped');
+            render();
+        }
+    }
+    function nextCard() { go(1); }
+    function prevCard() { go(-1); }
+
+    cardEl.addEventListener('click', flip);
+
+    document.addEventListener('keydown', function (e) {
+        if (document.getElementById('card-screen').style.display === 'none') return;
+        if (e.key === 'ArrowRight') { nextCard(); }
+        else if (e.key === 'ArrowLeft') { prevCard(); }
+        else if ((e.key === ' ' || e.key === 'Enter') && e.target.tagName !== 'BUTTON') { e.preventDefault(); flip(); }
+    });
+
+    // 스마트폰: 좌우로 밀어서 넘기기
+    var touchX = null, touchY = null;
+    cardEl.addEventListener('touchstart', function (e) {
+        touchX = e.touches[0].clientX;
+        touchY = e.touches[0].clientY;
+    }, { passive: true });
+    cardEl.addEventListener('touchend', function (e) {
+        if (touchX === null) return;
+        var dx = e.changedTouches[0].clientX - touchX;
+        var dy = e.changedTouches[0].clientY - touchY;
+        touchX = null;
+        if (Math.abs(dx) > 60 && Math.abs(dy) < 50) {
+            if (dx < 0) nextCard(); else prevCard();
+        }
+    }, { passive: true });
+
+    init();
+</script>
+</body>
+</html>

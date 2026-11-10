@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>노인복지론 플래시카드</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* 눈이 편한 차분한 초록 계열 (index.html의 플래시카드 색과 맞춤) */
+    body {
+        font-family: 'Pretendard', sans-serif;
+        background: linear-gradient(135deg, #2f7d5b 0%, #1b4332 100%);
+        background-attachment: fixed;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .container { width: 100%; max-width: 850px; margin: auto; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+    .header { text-align: center; color: white; margin-bottom: 20px; }
+    .header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 6px; }
+    .header .sub { font-size: 1.05rem; font-weight: 600; opacity: 0.92; margin-bottom: 10px; word-break: keep-all; }
+    .header .count { font-size: 1.1rem; font-weight: 700; }
+    .progress { max-width: 340px; height: 6px; margin: 12px auto 0; background: rgba(255,255,255,0.25); border-radius: 3px; overflow: hidden; }
+    #bar { height: 100%; width: 0; background: white; border-radius: 3px; transition: width 0.3s; }
+
+    /* 카드 */
+    .stage { perspective: 1400px; margin: 12px 0; }
+    .card {
+        position: relative;
+        width: 100%;
+        height: min(460px, 60vh);
+        height: min(460px, 60dvh);
+        min-height: 320px;
+        cursor: pointer;
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .card.flipped { transform: rotateY(180deg); }
+    .card:focus-visible { outline: 3px solid #fde68a; outline-offset: 4px; }
+
+    .side {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 20px 26px 18px;
+        border-radius: 20px;
+        overflow-y: auto;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        word-break: keep-all;
+        white-space: pre-line;
+    }
+    .front { background: white; color: #1e293b; }
+    .back { background: #f0f7f2; color: #1b4332; transform: rotateY(180deg); }
+
+    .meta { display: flex; align-items: center; justify-content: space-between; min-height: 28px; white-space: normal; }
+    .chip { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; }
+    .chip-q { background: #f1f5f9; color: #475569; }
+    .chip-a { background: #cfe8d8; color: #1b4332; }
+    .stars { font-size: 0.95rem; font-weight: 800; color: #1f6b46; background: #e3f1e8; padding: 3px 10px; border-radius: 20px; display: none; }
+
+    /* 내용이 길어도 위쪽이 잘리지 않도록 margin:auto로 가운데 맞춤 */
+    .body { margin: auto; padding: 14px 0; text-align: center; font-size: 1.4rem; font-weight: 700; line-height: 1.55; }
+    .back .body { font-size: 1.55rem; font-weight: 800; }
+    .src { min-height: 1.2em; text-align: center; font-size: 0.85rem; color: #64748b; white-space: normal; }
+
+    .tip { text-align: center; color: rgba(255,255,255,0.85); font-size: 0.9rem; margin: 4px 0 14px; word-break: keep-all; }
+
+    .controls { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 12px; }
+    .btn { padding: 18px 10px; border: none; border-radius: 12px; background: white; color: #1f6b46; font-family: inherit; font-size: 1.05rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .btn:hover { background: #f1f5f9; transform: translateY(-2px); }
+    .btn:focus-visible { outline: 3px solid #fde68a; outline-offset: 2px; }
+
+    /* 데이터 검사 결과 화면 */
+    .problem-card { display: none; background: white; border-radius: 15px; padding: 28px; border-left: 6px solid #dc3545; box-shadow: 0 10px 30px rgba(0,0,0,0.25); color: #1e293b; }
+    .problem-card h2 { margin: 0 0 8px; font-size: 1.3rem; }
+    .problem-card .summary { margin: 0 0 16px; color: #55657d; line-height: 1.6; word-break: keep-all; }
+    .problem-list { list-style: none; margin: 0 0 8px; padding: 0; }
+    .problem-list li { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid #e0e7f1; line-height: 1.5; word-break: keep-all; }
+    .problem-list .tag { flex: none; min-width: 3.2rem; font-weight: 800; color: #dc3545; }
+    .problem-card .tips { margin: 12px 0 0; padding: 14px; background: #f3f6fa; border-radius: 10px; font-size: 0.92rem; line-height: 1.6; color: #2f3640; word-break: keep-all; }
+    .problem-card .tips ul { margin: 6px 0 0; padding-left: 20px; }
+    #partial-btn { width: 100%; padding: 16px; margin-top: 16px; border: none; border-radius: 10px; background: #2e7d5b; color: white; font-weight: bold; font-size: 1.05rem; cursor: pointer; font-family: inherit; }
+    #partial-btn:focus-visible { outline: 3px solid #1e293b; outline-offset: 2px; }
+
+    @media (max-width: 600px) {
+        body { padding: 14px; }
+        .header h1 { font-size: 1.6rem; }
+        .side { padding: 16px 18px 14px; }
+        .body { font-size: 1.2rem; }
+        .back .body { font-size: 1.3rem; }
+        .controls { grid-template-columns: 1fr 1fr; }
+        .controls .btn-list { grid-column: 1 / -1; }
+        .btn { padding: 16px 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .card, #bar, .btn { transition: none; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <div id="problem-screen" class="problem-card" role="alert">
+        <h2 id="problem-title"></h2>
+        <p id="problem-summary" class="summary"></p>
+        <ul id="problem-list" class="problem-list"></ul>
+        <div id="problem-tips" class="tips"></div>
+        <button id="partial-btn" type="button"></button>
+    </div>
+
+    <div id="card-screen">
+        <div class="header">
+            <h1 id="page-title">플래시카드</h1>
+            <p class="sub" id="page-sub"></p>
+            <p class="count"><span id="current">1</span> / <span id="total">0</span></p>
+            <div class="progress"><div id="bar"></div></div>
+        </div>
+
+        <div class="stage">
+            <div class="card" id="flashcard" role="button" tabindex="0" aria-label="카드 뒤집기">
+                <div class="side front">
+                    <div class="meta"><span class="chip chip-q">질문</span><span class="stars" id="stars"></span></div>
+                    <div class="body" id="question"></div>
+                    <div class="src" id="source"></div>
+                </div>
+                <div class="side back">
+                    <div class="meta"><span class="chip chip-a">정답</span></div>
+                    <div class="body" id="answer"></div>
+                    <div class="src"></div>
+                </div>
+            </div>
+        </div>
+
+        <p class="tip">카드를 누르면 정답이 보여요. 화살표 키나 좌우로 밀어서 넘길 수 있어요.</p>
+
+        <div class="controls">
+            <button class="btn" type="button" onclick="prevCard()">이전</button>
+            <button class="btn" type="button" onclick="nextCard()">다음</button>
+            <button class="btn btn-list" type="button" onclick="location.href='index.html'">목록으로 돌아가기</button>
+        </div>
+    </div>
+</div>
+
+<!-- ① 오류 수집용: 반드시 맨 위(②, ③보다 앞)에 두세요. 수정하지 마세요. -->
+<script>
+    window.__dataErrors = [];
+    window.addEventListener('error', function (e) {
+        window.__dataErrors.push({ msg: e.message, line: e.lineno });
+    });
+</script>
+
+<!-- ② 장 설정: 새 장을 만들 때 번호(1~15)와 제목만 고치세요. -->
+<script>
+    const LECTURE = { no: 2, title: "노화 관련 이론" };
+</script>
+
+<!-- ③ 카드 데이터: 노트북LM이 만든 const cards = [...]; 를 통째로 덮어쓰세요.
+     아래 2장은 화면 확인용 예시입니다. 덮어쓸 때 이 예시도 같이 지우세요.
+     카드마다 q(질문)와 a(정답)가 모두 있어야 합니다. -->
+<script>
+    const cards = [
+        {"q": "★★★ 커밍과 헨리(Cumming & Henry)가 주장하였으며, 노년기에 사회적 역할과 관계에서 벗어나는 것을 보편적이고 긍정적 상태로 보는 이론은? [교재 2장 2.3절 노화 관련 이론, 워크북 2장, 2015년 기출, 2016년 기출]",
+    "a": "은퇴유리이론(분리이론, disengagement theory)"
+  },
+  {
+    "q": "★★★ 해비거스트(Havighurst) 등이 주장하였으며, 노년기에도 중년기와 유사한 심리사회적 욕구를 유지하며 사회적 활동 참여가 높을수록 생활만족도가 높아진다는 이론은? [교재 2장 2.3절 노화 관련 이론, 워크북 2장, 2016년 기출]",
+    "a": "활동이론(activity theory)"
+  },
+  {
+    "q": "★★★ 개인이 노년기에 전형적인 환경적응 방식과 행동패턴을 유지하며, 잃어버린 역할을 유사한 형태의 역할로 대체하여 지속성을 유지한다고 보는 이론은? [교재 2장 2.3절 노화 관련 이론, 워크북 2장, 2014년 기출, 2018년 기출]",
+    "a": "연속이론(continuity theory)"
+  },
+  {
+    "q": "★★★ 공리주의 경제학 및 행동주의에 기초하여, 노인이 가진 교환 자원(돈, 지위 등)의 유무가 사회적 관계에서의 지배권과 의존성을 결정한다고 설명한 이론은? [교재 2장 2.3절 노화 관련 이론, 워크북 2장, 2016년 기출]",
+    "a": "교환이론(exchange theory)"
+  },
+  {
+    "q": "★★★ 낙인이론의 연장선상에서 노인에 대한 부정적 인식이 환류작용을 일으켜 노인을 무능력자로 낙인하고 사회적 활동을 약화시킨다고 보는 이론은? [교재 2장 2.3절 노화 관련 이론, 워크북 2장, 기말 연습문제정리 2강]",
+    "a": "사회적 와해이론(social breakdown theory)"
+  },
+  {
+    "q": "★★★ 카우길과 홈스(Cowgill & Holmes)가 제시하였으며, 산업화·도시화·과학기술 발전으로 노인의 사회적 지위가 하락하고 역할이 상실되었다고 설명하는 거시적 이론은? [교재 2장 2.3절 노화 관련 이론, 워크북 2장, 기말 연습문제정리 2강, 2016년 기출]",
+    "a": "현대화이론(modernization theory)"
+  },
+  {
+    "q": "★★★ 라일리와 포너(Riley & Foner)가 주장하였으며, 사회가 연령에 따라 사람들을 계층화하며 동일 연령 코호트가 유사한 태도를 형성한다고 보는 거시적 이론은? [교재 2장 2.3절 노화 관련 이론, 워크북 2장, 2015년 기출, 2016년 기출]",
+    "a": "연령계층이론(age stratification theory)"
+  },
+  {
+    "q": "★★★ 연령이 어떤 사회적 활동의 진입장벽이 되지 않고, 나이와 상관없이 생애주기별 교육·노동·여가를 유연하게 누리며 세대 간 상호작용이 활발한 사회는? [교재 2장 2.3절 노화 관련 이론, 워크북 2장, 2015년 기출, 2016년 기출]",
+    "a": "연령통합사회(age integrated society)"
+  },
+  {
+    "q": "★★★ 프랑크푸르트학파(하버마스, 무디 등)가 중심이 되어 자본주의 구조 비판과 공공정책의 실제적 개입 및 해방을 강조하는 거시적 노화이론은? [교재 2장 2.3절 노화 관련 이론, 워크북 2장, 기말 연습문제정리 2강]",
+    "a": "비판이론(critical theory)"
+  },
+  {
+    "q": "★★★ 전 생애에 걸쳐 개인이 경험하는 사건과 사회적·역사적·상황적 맥락 간의 상호작용을 통합적으로 분석하는 거시적 노화이론은? [교재 2장 2.3절 노화 관련 이론, 워크북 2장]",
+    "a": "생애과정이론(life course theory)"
+  },
+  {
+    "q": "★★★ 기존의 정치·사회적 구조를 전면 혁파하기보다는 기성 틀 안에서 여성의 입장이 반영되도록 개량하는 데 초점을 맞추는 여성주의 파파는? [교재 2장 2.3절 노화 관련 이론, 워크북 2장, 기말 연습문제정리 2강]",
+    "a": "자유주의 여성주의(liberal feminism)"
+  },
+  {
+    "q": "★★★ 발테스와 발테스(Baltes & Baltes)가 제시한 성공적 노화 모델로, 상실은 최소화하고 긍정적 결과는 최대화하기 위해 개인과 환경 간 지속적 상호작용을 강조하는 모형은? [교재 2장 2.2절 성공적 노화, 기말 연습문제정리 2강]",
+    "a": "보상을 수반한 선택적 최적화 모델(SOC 모델)"
+  },
+  {
+    "q": "★★★ 로웨와 칸(Rowe & Kahn)이 제시한 성공적 노화의 3가지 핵심 구성 요소는? [교재 2장 2.2절 성공적 노화]",
+    "a": "① 질병과 장애의 부재, ② 신체적·인지적 기능 유지, ③ 적극적인 삶의 참여(인간관계 및 생산적 활동)"
+  },
+  {
+    "q": "★★★ 래슬릿(Laslett)의 제3기 인생론에서 은퇴 후 건강을 바탕으로 사회적 책임에서 벗어나 자기성취를 이루는 시기를 뜻하는 인생 단계는? [교재 2장 2.3절 노화 관련 이론, 2015년 기출, 2017년 기출]",
+    "a": "제3기 인생(Third Age)"
+  },
+  {
+    "q": "★★★ 마샬(Marshall)의 시민 3권(자유권, 참정권, 사회권)에 기초하여 노인을 권리의 주체로 바로 세우는 시각의 이론적 기반은? [교재 2장 2.3절 노화 관련 이론, 2018년 기출]",
+    "a": "권리이론(선배시민론의 기반)"
+  },
+  {
+    "q": "★★★ 연령의 사회적 의미와 개념이 어떻게 사회적으로 구성되고 담론화되는지에 주안점을 두는 미시적 노화이론은? [교재 2장 2.3절 노화 관련 이론, 기말 연습문제정리 2강]",
+    "a": "사회구성주의이론(social constructionist theory)"
+  },
+  {
+    "q": "★★★ 정영숙(2011)이 서구의 개인주의적 성공적 노화 모델의 한계를 극복하기 위해 주변인과의 관계와 세대 간 배려를 포함하여 제시한 한국적 노화 개념은? [교재 2장 2.1절 노화의 개념, 2019년 기출]",
+    "a": "성숙한 노화(psycho-socially matured aging)"
+  },
+  {
+    "q": "★★☆ 시간의 흐름에 따라 유기체에서 진행되며, 생식력 감퇴와 사망률 증가가 동반되는 진행성의 기능 상실을 뜻하는 라틴어 어원 'aetas'에서 기원한 개념은? [교재 2장 2.1절 노화의 개념]",
+    "a": "노화(aging)"
+  },
+  {
+    "q": "★★☆ 스트렐러(Strehler)에 따를 때 특정 개인에게 유발되는 '질병(disease)'과 달리, 모든 사람에게 공통적으로 나타나는 노화의 생물학적 특성은? [교재 2장 2.1절 노화의 개념]",
+    "a": "보편성(universality)"
+  },
+  {
+    "q": "★★☆ WHO의 PAH에서 기대수명 연장과 평생 최상의 신체적·사회적·정신적 안녕 상태를 유지하는 과정으로 정의한 긍정적 노화 개념은? [교재 2장 2.1절 노화의 개념]",
+    "a": "적극적 노화(active aging)"
+  },
+  {
+    "q": "★★☆ 해리슨(Harrison)이 주창한 '건강한 노화(healthy aging)'를 구성하는 2가지 핵심 조건은? [교재 2장 2.1절 노화의 개념]",
+    "a": "독립적인 건강한 생활 영위 & 정서적 안녕"
+  },
+  {
+    "q": "★★☆ 오키나와 100세 노인 연구(Willcox et al.)에서 우아한 노화(graceful aging)를 위해 90대 내내 높게 유지되어야 한다고 본 3가지 핵심 기능은? [교재 2장 2.1절 노화의 개념]",
+    "a": "신체 기능, 감각 기능, 인지 기능"
+  },
+  {
+    "q": "★★☆ 노화 이론을 발전 세대별로 구분할 때, 1970년대 이전에 개인적 요소와 구조기능주의·상징적 상호작용론에 기초한 이론 군을 무엇이라 하는가? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "1세대 노화이론"
+  },
+  {
+    "q": "★★☆ 핸드릭스(Hendricks)가 노화 이론 발전의 변증법적 과정(정-반-합)에서 개인 중심(정)과 사회구조 중심(반)을 거쳐 도달한 합(合)의 단계는? [강의록 2장]",
+    "a": "개인과 사회구조의 역동적 상호작용을 통합한 이론"
+  },
+  {
+    "q": "★★☆ 노박(Novak)의 미시적 노화이론과 거시적 노화이론의 구분 기준은 각각 무엇에 초점을 맞추는가? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "미시적 이론: 사람과 사람 사이의 관계(대인관계) / 거시적 이론: 사회제도·체계 및 전체 사회"
+  },
+  {
+    "q": "★★☆ 해비거스트(Havighurst)가 활동이론을 검증하고 발전시키는 토대가 된 6년 간의 종단연구 대상 지역과 연구 명칭은? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "캔자스시티 성인연구(Kansas City Studies of Adult Life)"
+  },
+  {
+    "q": "★★☆ 레먼 등(Lemon et al., 1972)이 상징적 상호작용론 관점을 도입하여 정교화한 활동이론의 핵심 매개 기제는? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "타인과의 상호작용을 통한 '자아개념의 재확인'"
+  },
+  {
+    "q": "★★☆ 마틴(Martin, 1971)이 교환이론을 노인 지위에 적용하였을 때, 자원이 부족한 노인이 겪게 되는 대표적 사회적 결과 2가지는? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "의존적 지위의 감수 & 사회적 소외"
+  },
+  {
+    "q": "★★☆ 낙인이론의 핵심 명제에 따라 사회적 처벌 및 낙인이 행위자의 자아개념을 훼손하여 유발하는 현상은? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "이차적 일탈(secondary deviance)"
+  },
+  {
+    "q": "★★☆ 래슬릿의 인생 4단계 중 신체적·정신적으로 약해져 타인에게 의존하며 죽음에 임하는 시기로 단축이 강조되는 단계는? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "제4기 인생(Fourth Age)"
+  },
+  {
+    "q": "★★☆ '개인적인 것은 정치적인 것'이라는 슬로건 아래 가사노동, 육아, 가부장제의 근본적 변혁을 주장하는 여성주의 파파는? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "급진주의 여성주의(radical feminism)"
+  },
+  {
+    "q": "★★☆ 자본주의 경제체제의 계급 억압과 가부장제의 성차별 억압을 통합하여 여성 노인 문제를 해석하는 여성주의 학파는? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "사회주의 여성주의(socialist feminism)"
+  },
+  {
+    "q": "★★☆ 1세대 미시/사회적 노화이론(활동이론, 분리이론 등)의 기반이 된 사회학의 2대 대표 관점은? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "구조기능주의 & 상징적 상호작용론"
+  },
+  {
+    "q": "★★☆ 대가 피아니스트 루빈스타인이 노년에 신체 감퇴에 맞서 연주곡을 축소하고, 집중 연습하며, 템포를 조절한 사례가 보여주는 노화 모형은? [강의록 2장]",
+    "a": "발테스의 보상을 수반한 선택적 최적화 모델(SOC 모형)"
+  },
+  {
+    "q": "★☆☆ 성공적 노화(successful aging)라는 용어가 학술적으로 세계노년학회에서 처음 제기된 연도는? [교재 2장 2.2절 성공적 노화]",
+    "a": "1986년"
+  },
+  {
+    "q": "★☆☆ 은퇴유리이론(분리이론)에서 노화 과정 중 노인이 겪는 3가지 대표적 분리 영역은? [교재 2장 2.3절 노화 관련 이론, 2016년 기출]",
+    "a": "신체적 분리, 심리적 분리, 사회적 분리"
+  },
+  {
+    "q": "★☆☆ 활동이론에 대한 주요 비판점 중 하나로, 어떤 사회적 가치를 강조하는 문화권 외에 보편 적용되기 어렵다는 지적이 있는가? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "노동과 생산성을 강조하는 미국(서구) 문화권"
+  },
+  {
+    "q": "★☆☆ 서구의 성공적 노화 모델들이 한국 노인의 현실에 그대로 적용되기 어려운 이유로 지적되는 문화적 차이는? [교재 2장 2.2절 성공적 노화]",
+    "a": "서구의 개인주의적 안녕 중심 vs 한국 노인의 가족관계 및 세대 간 배려 중심"
+  },
+  {
+    "q": "★☆☆ 사회적 와해이론의 대표적인 학자로 쿠이퍼스(Kuypers)와 함께 논의되는 학자는? [강의록 2장]",
+    "a": "벵트손(Bengtson)"
+  },
+  {
+    "q": "★☆☆ 래슬릿의 인생 4단계 중 출생부터 학업과 준비를 마치는 시기를 뜻하는 인생 단계는? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "제1기 인생(First Age, 0~25세)"
+  },
+  {
+    "q": "★☆☆ 래슬릿의 인생 4단계 중 취업, 결혼, 가정과 직장에 대한 사회적 의무를 수행하는 시기는? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "제2기 인생(Second Age, 25~60/65세)"
+  },
+  {
+    "q": "★☆☆ 동일한 연도나 시대에 태어나 유사한 역사적·사회적 경험을 공유하는 집단을 뜻하는 인구학적 용어는? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "연령 코호트(age cohort)"
+  },
+  {
+    "q": "★☆☆ 콜(Kohl)이 지적한 것으로, 나이에 따라 교육, 노동, 은퇴의 생애 단계가 엄격히 구획되는 현상을 뜻하는 용어는? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "생애주기의 제도화(삶의 연대기화)"
+  },
+  {
+    "q": "★☆☆ 라일리와 포너가 제시한 노화 이론으로, 연령이 계층화 요소로 작용함을 밝힌 이론은? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "연령계층이론(age stratification theory)"
+  },
+  {
+    "q": "★☆☆ 사회구성주의이론에서 노인을 수동적 객체가 아닌 사회적 세계 구성에 참여하는 어떤 존재로 보는가? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "적극적 주체(active agent)"
+  },
+  {
+    "q": "★☆☆ 교재 2장에서 제시하는 노화 관련 이론의 3가지 분류 기준을 제시하시오. [교재 2장 2.3절 노화 관련 이론]",
+    "a": "① 세대별 분류(1, 2, 3세대), ② 사회학적 관점별 분류(기능, 갈등, 상호작용, 교환), ③ 미시적/거시적 분류"
+  },
+  {
+    "q": "★☆☆ 노년기에 나타나는 안정신 등의 연구에 따른 성숙한 노화 태도의 주요 특성은? [교재 2장 2.1절 노화의 개념]",
+    "a": "욕심을 부리지 않고 자녀에게 누를 끼치지 않으며 타인을 배려하는 태도(자아통합감 및 지혜 향상)"
+  },
+  {
+    "q": "★☆☆ 생산적 노화(productive aging)가 중시하는 노년기의 핵심 가치는? [교재 2장 2.1절 노화의 개념]",
+    "a": "노인의 사회적·경제적 기여 및 생산적 활동 참여"
+  },
+  {
+    "q": "★☆☆ 비판이론이 기존 노화 이론에 대해 제기한 주요 비판 내용은? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "실증주의적 수량화에 치중하여 개인의 고독과 해방, 거시적 공공정책적 개입의 필요성을 간과했다는 점"
+  },
+  {
+    "q": "★☆☆ 교환이론에서 사람과 사람 사이의 관계가 유지되기 위한 보상과 비용의 조건은? [교재 2장 2.3절 노화 관련 이론]",
+    "a": "보상이 비용보다 커야 함(이윤이 발생해야 함)"}
+    ];</script>
+
+<!-- ④ 프로그램 본체: 수정하지 마세요. -->
+<script>
+    var deck = [];
+    var cur = 0;
+    var swapTimer = null;
+
+    document.title = '제' + LECTURE.no + '장 - ' + LECTURE.title;
+    document.getElementById('page-title').textContent = '제' + LECTURE.no + '장 플래시카드';
+    document.getElementById('page-sub').textContent = LECTURE.title;
+
+    var cardEl = document.getElementById('flashcard');
+
+    function reduceMotion() {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+
+    /* ---------- 데이터 검사 ---------- */
+    function validateCards(data) {
+        var errors = [];
+        var valid = [];
+
+        if (!Array.isArray(data) || data.length === 0) {
+            errors.push({ tag: '전체', text: 'cards가 비어 있거나 배열([ ])이 아닙니다.' });
+            return { errors: errors, valid: valid };
+        }
+
+        data.forEach(function (item, i) {
+            var tag = (i + 1) + '번 카드';
+            var problems = [];
+            if (!item || typeof item !== 'object') {
+                problems.push('카드가 { } 형식이 아닙니다.');
+            } else {
+                if (typeof item.q !== 'string' || !item.q.trim()) problems.push('q(질문)가 없거나 비어 있습니다.');
+                if (typeof item.a !== 'string' || !item.a.trim()) problems.push('a(정답)가 없거나 비어 있습니다.');
+            }
+            if (problems.length) {
+                problems.forEach(function (t) { errors.push({ tag: tag, text: t }); });
+            } else {
+                valid.push(item);
+            }
+        });
+
+        return { errors: errors, valid: valid };
+    }
+
+    function showProblemScreen(opts) {
+        document.getElementById('card-screen').style.display = 'none';
+        document.getElementById('problem-screen').style.display = 'block';
+        document.getElementById('problem-title').textContent = opts.title;
+        document.getElementById('problem-summary').textContent = opts.summary;
+
+        var list = document.getElementById('problem-list');
+        list.innerHTML = '';
+        opts.items.forEach(function (it) {
+            var li = document.createElement('li');
+            var tag = document.createElement('span');
+            tag.className = 'tag';
+            tag.textContent = it.tag;
+            var txt = document.createElement('span');
+            txt.textContent = it.text;
+            li.appendChild(tag);
+            li.appendChild(txt);
+            list.appendChild(li);
+        });
+
+        var tips = document.getElementById('problem-tips');
+        tips.innerHTML = '';
+        if (opts.tips && opts.tips.length) {
+            tips.appendChild(document.createTextNode('자주 생기는 원인'));
+            var ul = document.createElement('ul');
+            opts.tips.forEach(function (t) {
+                var li = document.createElement('li');
+                li.textContent = t;
+                ul.appendChild(li);
+            });
+            tips.appendChild(ul);
+            tips.style.display = 'block';
+        } else {
+            tips.style.display = 'none';
+        }
+
+        var btn = document.getElementById('partial-btn');
+        if (opts.buttonText) {
+            btn.textContent = opts.buttonText;
+            btn.style.display = 'block';
+            btn.onclick = opts.onButton;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    function startDeck(list) {
+        deck = list;
+        cur = 0;
+        document.getElementById('problem-screen').style.display = 'none';
+        document.getElementById('card-screen').style.display = 'block';
+        render();
+    }
+
+    function init() {
+        // 데이터 문법 오류: ③ 블록이 아예 실행되지 못한 경우
+        if (typeof cards === 'undefined') {
+            var items = window.__dataErrors.map(function (er) {
+                return { tag: er.line ? ('약 ' + er.line + '줄') : '오류', text: er.msg };
+            });
+            if (!items.length) items.push({ tag: '오류', text: 'cards를 찾을 수 없습니다. const cards = [ ... ]; 형태가 맞는지 확인하세요.' });
+            showProblemScreen({
+                title: '⚠️ 카드 데이터를 읽지 못했어요',
+                summary: '데이터 부분에 문법 오류가 있어서 프로그램이 멈췄습니다. 아래 줄 근처를 확인하세요.',
+                items: items,
+                tips: [
+                    '문장 안에 큰따옴표(")가 들어 있음 → 작은따옴표(\')로 바꾸기',
+                    '카드와 카드 사이 쉼표(,) 빠짐, 또는 맨 끝의 ]; 가 지워짐',
+                    '문장 한가운데에서 줄이 바뀜 (한 문장은 한 줄로)',
+                    '붙여넣은 글에 // 가 포함되어 뒷부분이 주석 처리됨'
+                ]
+            });
+            return;
+        }
+
+        var result = validateCards(cards);
+
+        if (result.errors.length === 0) {
+            startDeck(result.valid);
+            return;
+        }
+
+        var total = Array.isArray(cards) ? cards.length : 0;
+        var badCount = total - result.valid.length;
+        showProblemScreen({
+            title: '⚠️ 고칠 곳이 ' + result.errors.length + '군데 있어요',
+            summary: badCount > 0
+                ? '전체 ' + total + '장 중 ' + badCount + '장에 문제가 있습니다. 데이터를 고치고 새로고침하세요.'
+                : '카드 데이터를 확인하고 새로고침하세요.',
+            items: result.errors,
+            tips: ['카드마다 q(질문)와 a(정답)가 모두 있어야 하고, 둘 다 글자(따옴표로 감싼 문장)여야 합니다'],
+            buttonText: result.valid.length > 0 ? '오류 없는 ' + result.valid.length + '장만 먼저 보기' : null,
+            onButton: function () { startDeck(result.valid); }
+        });
+    }
+
+    /* ---------- 카드 표시 ---------- */
+    // 질문 앞의 ★(중요도)와 끝의 [출처]를 따로 떼어 작은 표식으로 보여줍니다.
+    function parseQuestion(raw) {
+        var text = raw.trim();
+        var stars = '';
+        var src = '';
+        var m = text.match(/^([★☆]{1,5})\s*/);
+        if (m) { stars = m[1]; text = text.slice(m[0].length); }
+        var s = text.match(/\s*\[([^\]]{1,120})\]\s*$/);
+        if (s) { src = s[1]; text = text.slice(0, s.index); }
+        if (!text.trim()) { text = raw.trim(); stars = ''; src = ''; }
+        return { stars: stars, src: src, text: text };
+    }
+
+    function render() {
+        var c = deck[cur];
+        var p = parseQuestion(c.q);
+
+        document.getElementById('question').textContent = p.text;
+        document.getElementById('answer').textContent = c.a.trim();
+        document.getElementById('source').textContent = p.src ? '출처: ' + p.src : '';
+
+        var starsEl = document.getElementById('stars');
+        if (p.stars) {
+            var filled = (p.stars.match(/★/g) || []).length;
+            starsEl.textContent = p.stars;
+            starsEl.setAttribute('aria-label', '중요도 ' + p.stars.length + '개 중 ' + filled + '개');
+            starsEl.style.display = 'inline-block';
+        } else {
+            starsEl.style.display = 'none';
+        }
+
+        document.getElementById('current').textContent = cur + 1;
+        document.getElementById('total').textContent = deck.length;
+        document.getElementById('bar').style.width = ((cur + 1) / deck.length * 100) + '%';
+    }
+
+    function flip() { cardEl.classList.toggle('flipped'); }
+
+    function go(delta) {
+        cur = (cur + delta + deck.length) % deck.length;
+        clearTimeout(swapTimer);
+        if (cardEl.classList.contains('flipped') && !reduceMotion()) {
+            // 먼저 카드를 앞면으로 돌리고, 옆면이 되어 안 보일 때 내용을 바꿔서 다음 정답이 미리 비치지 않게 함
+            cardEl.classList.remove('flipped');
+            swapTimer = setTimeout(render, 300);
+        } else {
+            cardEl.classList.remove('flipped');
+            render();
+        }
+    }
+    function nextCard() { go(1); }
+    function prevCard() { go(-1); }
+
+    cardEl.addEventListener('click', flip);
+
+    document.addEventListener('keydown', function (e) {
+        if (document.getElementById('card-screen').style.display === 'none') return;
+        if (e.key === 'ArrowRight') { nextCard(); }
+        else if (e.key === 'ArrowLeft') { prevCard(); }
+        else if ((e.key === ' ' || e.key === 'Enter') && e.target.tagName !== 'BUTTON') { e.preventDefault(); flip(); }
+    });
+
+    // 스마트폰: 좌우로 밀어서 넘기기
+    var touchX = null, touchY = null;
+    cardEl.addEventListener('touchstart', function (e) {
+        touchX = e.touches[0].clientX;
+        touchY = e.touches[0].clientY;
+    }, { passive: true });
+    cardEl.addEventListener('touchend', function (e) {
+        if (touchX === null) return;
+        var dx = e.changedTouches[0].clientX - touchX;
+        var dy = e.changedTouches[0].clientY - touchY;
+        touchX = null;
+        if (Math.abs(dx) > 60 && Math.abs(dy) < 50) {
+            if (dx < 0) nextCard(); else prevCard();
+        }
+    }, { passive: true });
+
+    init();
+</script>
+</body>
+</html>

@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>노인복지론 플래시카드</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* 눈이 편한 차분한 초록 계열 (index.html의 플래시카드 색과 맞춤) */
+    body {
+        font-family: 'Pretendard', sans-serif;
+        background: linear-gradient(135deg, #2f7d5b 0%, #1b4332 100%);
+        background-attachment: fixed;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .container { width: 100%; max-width: 850px; margin: auto; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+    .header { text-align: center; color: white; margin-bottom: 20px; }
+    .header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 6px; }
+    .header .sub { font-size: 1.05rem; font-weight: 600; opacity: 0.92; margin-bottom: 10px; word-break: keep-all; }
+    .header .count { font-size: 1.1rem; font-weight: 700; }
+    .progress { max-width: 340px; height: 6px; margin: 12px auto 0; background: rgba(255,255,255,0.25); border-radius: 3px; overflow: hidden; }
+    #bar { height: 100%; width: 0; background: white; border-radius: 3px; transition: width 0.3s; }
+
+    /* 카드 */
+    .stage { perspective: 1400px; margin: 12px 0; }
+    .card {
+        position: relative;
+        width: 100%;
+        height: min(460px, 60vh);
+        height: min(460px, 60dvh);
+        min-height: 320px;
+        cursor: pointer;
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .card.flipped { transform: rotateY(180deg); }
+    .card:focus-visible { outline: 3px solid #fde68a; outline-offset: 4px; }
+
+    .side {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 20px 26px 18px;
+        border-radius: 20px;
+        overflow-y: auto;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        word-break: keep-all;
+        white-space: pre-line;
+    }
+    .front { background: white; color: #1e293b; }
+    .back { background: #f0f7f2; color: #1b4332; transform: rotateY(180deg); }
+
+    .meta { display: flex; align-items: center; justify-content: space-between; min-height: 28px; white-space: normal; }
+    .chip { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; }
+    .chip-q { background: #f1f5f9; color: #475569; }
+    .chip-a { background: #cfe8d8; color: #1b4332; }
+    .stars { font-size: 0.95rem; font-weight: 800; color: #1f6b46; background: #e3f1e8; padding: 3px 10px; border-radius: 20px; display: none; }
+
+    /* 내용이 길어도 위쪽이 잘리지 않도록 margin:auto로 가운데 맞춤 */
+    .body { margin: auto; padding: 14px 0; text-align: center; font-size: 1.4rem; font-weight: 700; line-height: 1.55; }
+    .back .body { font-size: 1.55rem; font-weight: 800; }
+    .src { min-height: 1.2em; text-align: center; font-size: 0.85rem; color: #64748b; white-space: normal; }
+
+    .tip { text-align: center; color: rgba(255,255,255,0.85); font-size: 0.9rem; margin: 4px 0 14px; word-break: keep-all; }
+
+    .controls { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 12px; }
+    .btn { padding: 18px 10px; border: none; border-radius: 12px; background: white; color: #1f6b46; font-family: inherit; font-size: 1.05rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .btn:hover { background: #f1f5f9; transform: translateY(-2px); }
+    .btn:focus-visible { outline: 3px solid #fde68a; outline-offset: 2px; }
+
+    /* 데이터 검사 결과 화면 */
+    .problem-card { display: none; background: white; border-radius: 15px; padding: 28px; border-left: 6px solid #dc3545; box-shadow: 0 10px 30px rgba(0,0,0,0.25); color: #1e293b; }
+    .problem-card h2 { margin: 0 0 8px; font-size: 1.3rem; }
+    .problem-card .summary { margin: 0 0 16px; color: #55657d; line-height: 1.6; word-break: keep-all; }
+    .problem-list { list-style: none; margin: 0 0 8px; padding: 0; }
+    .problem-list li { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid #e0e7f1; line-height: 1.5; word-break: keep-all; }
+    .problem-list .tag { flex: none; min-width: 3.2rem; font-weight: 800; color: #dc3545; }
+    .problem-card .tips { margin: 12px 0 0; padding: 14px; background: #f3f6fa; border-radius: 10px; font-size: 0.92rem; line-height: 1.6; color: #2f3640; word-break: keep-all; }
+    .problem-card .tips ul { margin: 6px 0 0; padding-left: 20px; }
+    #partial-btn { width: 100%; padding: 16px; margin-top: 16px; border: none; border-radius: 10px; background: #2e7d5b; color: white; font-weight: bold; font-size: 1.05rem; cursor: pointer; font-family: inherit; }
+    #partial-btn:focus-visible { outline: 3px solid #1e293b; outline-offset: 2px; }
+
+    @media (max-width: 600px) {
+        body { padding: 14px; }
+        .header h1 { font-size: 1.6rem; }
+        .side { padding: 16px 18px 14px; }
+        .body { font-size: 1.2rem; }
+        .back .body { font-size: 1.3rem; }
+        .controls { grid-template-columns: 1fr 1fr; }
+        .controls .btn-list { grid-column: 1 / -1; }
+        .btn { padding: 16px 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .card, #bar, .btn { transition: none; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <div id="problem-screen" class="problem-card" role="alert">
+        <h2 id="problem-title"></h2>
+        <p id="problem-summary" class="summary"></p>
+        <ul id="problem-list" class="problem-list"></ul>
+        <div id="problem-tips" class="tips"></div>
+        <button id="partial-btn" type="button"></button>
+    </div>
+
+    <div id="card-screen">
+        <div class="header">
+            <h1 id="page-title">플래시카드</h1>
+            <p class="sub" id="page-sub"></p>
+            <p class="count"><span id="current">1</span> / <span id="total">0</span></p>
+            <div class="progress"><div id="bar"></div></div>
+        </div>
+
+        <div class="stage">
+            <div class="card" id="flashcard" role="button" tabindex="0" aria-label="카드 뒤집기">
+                <div class="side front">
+                    <div class="meta"><span class="chip chip-q">질문</span><span class="stars" id="stars"></span></div>
+                    <div class="body" id="question"></div>
+                    <div class="src" id="source"></div>
+                </div>
+                <div class="side back">
+                    <div class="meta"><span class="chip chip-a">정답</span></div>
+                    <div class="body" id="answer"></div>
+                    <div class="src"></div>
+                </div>
+            </div>
+        </div>
+
+        <p class="tip">카드를 누르면 정답이 보여요. 화살표 키나 좌우로 밀어서 넘길 수 있어요.</p>
+
+        <div class="controls">
+            <button class="btn" type="button" onclick="prevCard()">이전</button>
+            <button class="btn" type="button" onclick="nextCard()">다음</button>
+            <button class="btn btn-list" type="button" onclick="location.href='index.html'">목록으로 돌아가기</button>
+        </div>
+    </div>
+</div>
+
+<!-- ① 오류 수집용: 반드시 맨 위(②, ③보다 앞)에 두세요. 수정하지 마세요. -->
+<script>
+    window.__dataErrors = [];
+    window.addEventListener('error', function (e) {
+        window.__dataErrors.push({ msg: e.message, line: e.lineno });
+    });
+</script>
+
+<!-- ② 장 설정: 새 장을 만들 때 번호(1~15)와 제목만 고치세요. -->
+<script>
+    const LECTURE = { no: 14, title: "베이비붐 세대와 새로운 대응" };
+</script>
+
+<!-- ③ 카드 데이터: 노트북LM이 만든 const cards = [...]; 를 통째로 덮어쓰세요.
+     아래 2장은 화면 확인용 예시입니다. 덮어쓸 때 이 예시도 같이 지우세요.
+     카드마다 q(질문)와 a(정답)가 모두 있어야 합니다. -->
+<script>
+    const cards = [
+        {"q": "★★★ 노인의 삶의 질 향상을 목적으로 노인을 대상으로 하는 다양한 상품과 서비스를 연구·개발하는 것부터 판매하는 일련의 과정에 관련된 산업은? [교재 14장 14.1절 고령친화산업의 이해, 워크북 14장, 기말 연습문제정리 14강]",
+    "a": "고령친화산업"
+  },
+  {
+    "q": "★★★ 고령친화산업이 등장하게 된 4대 주요 사회적 배경은? [교재 14장 14.1절 고령친화산업의 이해, 워크북 14장, 기말 연습문제정리 14강]",
+    "a": "노인인구의 급증, 노인의 경제력 향상 및 소비 주체 부상, 가족의 노인부양기능 약화, 노인의 욕구 다양화 및 인식 변화"
+  },
+  {
+    "q": "★★★ 고령친화산업의 5대 주요 산업적 특징은? [교재 14장 14.1절 고령친화산업의 이해, 워크북 14장, 기말 연습문제정리 14강]",
+    "a": "복지형 산업(공공성+수익성), 중소기업형 산업(다품종 소량생산), 연계형 산업, 노동집약적 산업, 여성중심형 산업"
+  },
+  {
+    "q": "★★★ 여성의 평균수명이 남성보다 약 6년 더 길기 때문에 나타나는 고령친화산업의 고유한 특징은? [교재 14장 14.1절 고령친화산업의 이해, 워크북 14장, 기말 연습문제정리 14강, 정리하기+강의연습문제 14강]",
+    "a": "여성중심형 산업 (후기 고령 여성노인 중심의 상품·서비스 개발 필요)"
+  },
+  {
+    "q": "★★★ 노인의 욕구가 세분화되어 있어 소품종 대량생산의 대기업보다 다품종 소량생산에 적합하다는 고령친화산업의 특성은? [교재 14장 14.1절 고령친화산업의 이해, 기말 연습문제정리 14강]",
+    "a": "중소기업형 산업"
+  },
+  {
+    "q": "★★★ 노인의 삶의 질 보장을 위해 보건, 의료, 주거, 요양, 여가, 복지가 유기적으로 결합되어야 한다는 고령친화산업의 특성은? [교재 14장 14.1절 고령친화산업의 이해, 2019년 기출, 정리하기+강의연습문제 14강]",
+    "a": "연계형 산업"
+  },
+  {
+    "q": "★★★ 노인을 대상으로 하는 돌봄, 요양, 간호 등 서비스에 많은 인적 자원과 대면 케어가 요구되는 산업적 특성은? [교재 14장 14.1절 고령친화산업의 이해, 워크북 14장]",
+    "a": "노동집약적 산업"
+  },
+  {
+    "q": "★★★ 고령친화산업이 노인복지에 기여하는 공공성과 민간의 시장경쟁을 통한 수익성을 동시에 추구하는 산업적 성격은? [교재 14장 14.1절 고령친화산업의 이해, 2013년 기출]",
+    "a": "복지형 산업 (성장과 분배의 선순환 산업)"
+  },
+  {
+    "q": "★★★ 과거 고령친화산업보다 먼저 사용된 용어로, 노인의 부정적 이미지를 탈피하기 위해 은빛에 비유하여 민간업체가 제안했던 명칭은? [교재 14장 14.1절 고령친화산업의 이해, 2019년 기출]",
+    "a": "실버산업 (Silver Industry)"
+  },
+  {
+    "q": "★★★ 고령친화산업을 체계적으로 육성·지원하기 위해 2006년 제정되어 2007년 본격 시행된 우리나라 핵심 법률은? [교재 14장 14.2절 고령친화산업의 내용, 워크북 14장, 기말 연습문제정리 14강]",
+    "a": "「고령친화산업 진흥법」"
+  },
+  {
+    "q": "★★★ 고령친화산업 지원과 관련된 3대 핵심 법률은? [교재 14장 14.2절 고령친화산업의 내용, 기말 연습문제정리 14강, 2014년 기출]",
+    "a": "「저출산·고령사회기본법」(2005), 「고령친화산업 진흥법」(2006), 「노인장기요양보험법」(2007)"
+  },
+  {
+    "q": "★★★ 2021년 「고령친화산업 진흥법」 개정에서 규제 완화 차원으로 전격 폐지(삭제)된 제도는? [교재 14장 14.2절 고령친화산업의 내용]",
+    "a": "고령친화우수사업자 지정제도 (실효성 부족 및 시장진입 장벽 해소)"
+  },
+  {
+    "q": "★★★ 보건복지부와 한국보건산업진흥원 실태조사 분류에 따른 고령친화 제조업 5개 분야는? [교재 14장 14.2절 표 14-2, 워크북 14장]",
+    "a": "용품, 의약품, 의료기기, 식품, 화장품"
+  },
+  {
+    "q": "★★★ 보건복지부와 한국보건산업진흥원 실태조사 분류에 따른 고령친화 서비스업 5개 분야는? [교재 14장 14.2절 표 14-2, 워크북 14장]",
+    "a": "요양, 여가, 주거, 급식, 금융"
+  },
+  {
+    "q": "★★★ 인공지능(AI), 로봇, 사물인터넷(IoT) 등 4차 산업혁명 기술을 고령자의 삶과 돌봄에 접목하는 혁신 산업 분야는? [교재 14장 14.3절 고령친화산업의 전망, 워크북 14장]",
+    "a": "에이지테크 (Age-Tech)"
+  },
+  {
+    "q": "★★★ 한국 고령친화산업의 성장이 부진한 4대 주요 원인은? [교재 14장 14.3절 고령친화산업의 전망, 기말 연습문제정리 14강, 정리하기+강의연습문제 14강]",
+    "a": "산업활성화 공감대 부족, 복지용구 편중, 대표 제품 및 기업 부재, 국내 시장 안주"
+  },
+  {
+    "q": "★★★ 고령친화산업이 지속적으로 발전하기 위해 지양해야 할 낡은 인식과 나아갈 방향은? [교재 14장 14.3절 고령친화산업의 전망, 기말 연습문제정리 14강]",
+    "a": "취약계층 노인 전용 산업이라는 좁은 이미지 탈피 & 전체 고령층 대상 시장 융합 및 에이지테크 혁신"
+  },
+  {
+    "q": "★★☆ 고령친화산업의 광의의 개념에 포함되는 핵심 내용은? [교재 14장 14.1절 고령친화산업의 이해, 워크북 14장]",
+    "a": "노인을 대상으로 한 소비뿐만 아니라 자산관리, 삶의 보람(여가), 고용, 생활설계 등 관련된 모든 재화와 서비스"
+  },
+  {
+    "q": "★★☆ 고령친화산업의 협의의 개념에 해당하는 핵심 내용은? [교재 14장 14.1절 고령친화산업의 이해, 워크북 14장]",
+    "a": "노인을 주 소비자로 하여 민간이 영리추구에 입각해 상품과 서비스를 공급하는 사업"
+  },
+  {
+    "q": "★★☆ 일본 후생성(1999)이 규정한 실버산업의 정의는? [교재 14장 14.1절 고령친화산업의 이해, 워크북 14장]",
+    "a": "60세 이상 노인을 대상으로 민간기업이 시장경쟁원리에 입각하여 상품이나 서비스를 공급하는 산업"
+  },
+  {
+    "q": "★★☆ 해외 각국에서 고령친화산업을 지칭하는 대표적 영문 명칭 2가지는? [교재 14장 14.1절 고령친화산업의 이해, 워크북 14장]",
+    "a": "시니어마켓 (Senior Market), 노인시장 (Elderly Market)"
+  },
+  {
+    "q": "★★☆ 기존 노년층에 비해 베이비붐 세대 등 현대 노년층이 갖는 구매 및 가치관 특징은? [교재 14장 14.1절 표 14-1, 강의록 14강]",
+    "a": "가처분소득 증가, 독립적 가구 형태, 실용적 합리주의, 여가·레저·건강 등 삶의 질과 행복 추구"
+  },
+  {
+    "q": "★★☆ 고령친화산업 활성화에 기여한 3대 대표적 제도적 기회요인은? [교재 14장 14.1절 고령친화산업의 이해, 2014년 기출]",
+    "a": "공·사적 연금 수급자 확대, 주택연금제도 시행, 노인장기요양보험제도 도입"
+  },
+  {
+    "q": "★★☆ 2004년 고령사회대책로드맵 수립 당시 당초 제정하고자 추진했던 법률 명칭은? [교재 14장 14.2절 고령친화산업의 내용, 워크북 14장]",
+    "a": "실버산업진흥법"
+  },
+  {
+    "q": "★★☆ 「고령친화산업 진흥법」 제2조에서 명시한 고령친화산업의 공식 정의는? [교재 14장 14.1절 고령친화산업의 이해]",
+    "a": "고령친화제품 등을 연구·개발·제조·건축·제공·유통 또는 판매하는 업"
+  },
+  {
+    "q": "★★☆ 고령친화 제조업 중 신체 청결과 피부·모발 미화 및 건강 증진을 목적으로 노인이 주로 사용하는 제품을 생산하는 산업은? [교재 14장 14.2절 표 14-2]",
+    "a": "고령친화 화장품 제조업"
+  },
+  {
+    "q": "★★☆ 고령친화 서비스업 중 노인의 건강한 일상 유지를 위해 다수의 노인을 대상으로 식사 서비스를 제공하는 산업은? [교재 14장 14.2절 표 14-2]",
+    "a": "고령친화 급식 서비스업"
+  },
+  {
+    "q": "★★☆ 고령친화 서비스업 중 안정적 노후 소득기반과 자산관리를 돕는 금융상품을 공급하는 산업은? [교재 14장 14.2절 표 14-2]",
+    "a": "고령친화 금융 서비스업"
+  },
+  {
+    "q": "★★☆ 2021년 기준 우리나라 고령친화산업의 시장규모와 2012년 이후 연평균 성장률 수준은? [교재 14장 14.3절 고령친화산업의 전망, 워크북 14장]",
+    "a": "약 72.3조 원 (연평균 약 13% 성장)"
+  },
+  {
+    "q": "★★☆ 한국표준산업분류(KSIC)가 고령친화산업 시장규모 통계에 초래하는 구조적 한계는? [교재 14장 14.3절 고령친화산업의 전망, 워크북 14장]",
+    "a": "고유 분류 코드가 없어 전 연령 대상 일반 제품이나 연금까지 포함되어 시장규모가 과대추정됨"
+  },
+  {
+    "q": "★★☆ 현재 우리나라 고령친화용품 제조업체가 직면한 영세한 기업 환경 실태는? [교재 14장 14.3절 고령친화산업의 전망, 워크북 14장]",
+    "a": "절반 이상이 10인 미만 영세기업, 평균 자본금 8억 원 수준으로 기술혁신 역량 취약"
+  },
+  {
+    "q": "★★☆ 교재에서 지적한 2024년 고령친화산업 육성 정책의 치명적 위기는? [교재 14장 14.3절 고령친화산업의 전망, 워크북 14장]",
+    "a": "2024년 고령친화산업 육성 예산의 정부 전액 삭감"
+  },
+  {
+    "q": "★★☆ 미국 국립노화연구소(NIA)가 고령친화 신성장 동력으로 집중 지원하는 기술 분야는? [교재 14장 14.3절 고령친화산업의 전망, 워크북 14장]",
+    "a": "에이지테크 (Age-Tech: AI 기반 의료기기, 돌봄로봇, 보철장치 등)"
+  },
+  {
+    "q": "★★☆ 성남시 중원노인종합복지관이 디지털 기기 이용이 서툰 어르신들을 위해 도입한 배려형 무인단말기는? [강의록 14강]",
+    "a": "슬로우 키오스크 (Slow Kiosk)"
+  },
+  {
+    "q": "★☆☆ 고령친화산업을 노인 대상 상품·서비스 또는 노년기에 효력이 발생하는 상품·서비스의 시장 공급으로 정의한 국내 학자는? [교재 14장 14.1절 고령친화산업의 이해]",
+    "a": "최성재 (2014)"
+  },
+  {
+    "q": "★☆☆ 고령친화산업이 등장하게 된 가족 요인 중 핵심 변화는? [교재 14장 14.1절 고령친화산업의 이해, 기말 연습문제정리 14강]",
+    "a": "가족 형태의 변화(핵가족화)와 가족의 노인부양기능 약화"
+  },
+  {
+    "q": "★☆☆ 고령친화산업이 대기업 중심의 소품종 대량생산에 적합하지 않은 이유는? [교재 14장 14.1절 고령친화산업의 이해]",
+    "a": "노인의 건강 상태, 신체 치수, 취향, 소득 격차에 따라 요구 품목이 매우 다양하기 때문"
+  },
+  {
+    "q": "★☆☆ 고령친화산업의 소비자가 지닌 연령적 인구통계 특성 중 평균수명과 관련된 지표는? [교재 14장 14.1절 고령친화산업의 이해]",
+    "a": "여성의 평균수명이 남성보다 약 6년 더 김 (여성 82세 vs 남성 76세)"
+  },
+  {
+    "q": "★☆☆ 표 14-1에서 기존 노년층과 현대 노년층의 가장 대조적인 가족 거주 형태는? [교재 14장 14.1절 표 14-1]",
+    "a": "기존 노년층은 부양가족(동거) 형태, 현대 노년층은 독립가구(노인부부·1인가구) 형태"
+  },
+  {
+    "q": "★☆☆ 「고령친화산업 진흥법」 제2조에서 명시한 고령친화제품 등의 범위에 주택과 요양 서비스가 포함되는가? [교재 14장 14.2절 고령친화산업의 내용]",
+    "a": "포함된다 (노인이 주로 거주·이용하는 주택 및 시설, 요양 서비스)"
+  },
+  {
+    "q": "★☆☆ 「고령친화산업 진흥법」 제2조에 농업용품이나 영농지원 서비스도 고령친화제품에 포함되는가? [교재 14장 14.2절 고령친화산업의 내용]",
+    "a": "포함된다 (고령농업인을 위한 농업용품 및 영농지원 서비스 명시)"
+  },
+  {
+    "q": "★☆☆ 2021년 법 개정 전까지 고령친화우수사업자 지정 사례가 단 한 건도 없었던 이유는? [교재 14장 14.2절 고령친화산업의 내용]",
+    "a": "노인 소비자는 사업자 인증보다 제품 가격과 실용성을 중시했으며, 신규 기업의 진입 장벽으로 작용했기 때문"
+  },
+  {
+    "q": "★☆☆ 고령친화 금융서비스 통계에서 시장규모가 크게 잡히는 주된 원인은? [교재 14장 14.3절 고령친화산업의 전망]",
+    "a": "청·중·장년층이 가입하는 연금저축과 퇴직연금 등이 합산되어 있기 때문"
+  },
+  {
+    "q": "★☆☆ 「고령친화산업 진흥법」상 지정되어 있는 관계 중앙행정기관(정부 부처)의 수는? [교재 14장 14.3절 고령친화산업의 전망]",
+    "a": "총 9개 정부 부처"
+  },
+  {
+    "q": "★☆☆ 영국 연구혁신기구(UKRI)가 고령자 친화적 디자인과 제품 개발을 장려하기 위해 운영하는 어워드는? [교재 14장 14.3절 고령친화산업의 전망]",
+    "a": "Designed for Aging Awards"
+  },
+  {
+    "q": "★☆☆ 일본에서 개호로봇의 개발과 보급을 위해 부처 간 협력체계를 구축한 두 핵심 부처는? [교재 14장 14.3절 고령친화산업의 전망]",
+    "a": "후생노동성 & 경제산업성"
+  },
+  {
+    "q": "★☆☆ 중국이 실버경제를 국가 전략으로 공식 격상시킨 계기가 된 국가 개발 계획은? [교재 14장 14.3절 고령친화산업의 전망]",
+    "a": "제14차 5개년 계획"
+  },
+  {
+    "q": "★☆☆ 고령친화산업의 서비스업 5대 분야 중 노인요양시설과 방문요양 등을 포괄하는 산업은? [교재 14장 14.2절 표 14-2]",
+    "a": "고령친화 요양 서비스업"
+  },
+  {
+    "q": "★☆☆ 고령친화산업의 서비스업 5대 분야 중 노인복지주택과 시니어타운 임대 등을 포괄하는 산업은? [교재 14장 14.2절 표 14-2]",
+    "a": "고령친화 주거 서비스업"
+  },
+  {
+    "q": "★☆☆ 고령친화산업 활성화를 위해 정부 각 부처의 정책을 조율하고 종합 전략을 수립하기 위해 제안되는 기구는? [교재 14장 14.3절 고령친화산업의 전망]",
+    "a": "강력한 컨트롤타워 (총괄 기구)"}
+    ];</script>
+
+<!-- ④ 프로그램 본체: 수정하지 마세요. -->
+<script>
+    var deck = [];
+    var cur = 0;
+    var swapTimer = null;
+
+    document.title = '제' + LECTURE.no + '장 - ' + LECTURE.title;
+    document.getElementById('page-title').textContent = '제' + LECTURE.no + '장 플래시카드';
+    document.getElementById('page-sub').textContent = LECTURE.title;
+
+    var cardEl = document.getElementById('flashcard');
+
+    function reduceMotion() {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+
+    /* ---------- 데이터 검사 ---------- */
+    function validateCards(data) {
+        var errors = [];
+        var valid = [];
+
+        if (!Array.isArray(data) || data.length === 0) {
+            errors.push({ tag: '전체', text: 'cards가 비어 있거나 배열([ ])이 아닙니다.' });
+            return { errors: errors, valid: valid };
+        }
+
+        data.forEach(function (item, i) {
+            var tag = (i + 1) + '번 카드';
+            var problems = [];
+            if (!item || typeof item !== 'object') {
+                problems.push('카드가 { } 형식이 아닙니다.');
+            } else {
+                if (typeof item.q !== 'string' || !item.q.trim()) problems.push('q(질문)가 없거나 비어 있습니다.');
+                if (typeof item.a !== 'string' || !item.a.trim()) problems.push('a(정답)가 없거나 비어 있습니다.');
+            }
+            if (problems.length) {
+                problems.forEach(function (t) { errors.push({ tag: tag, text: t }); });
+            } else {
+                valid.push(item);
+            }
+        });
+
+        return { errors: errors, valid: valid };
+    }
+
+    function showProblemScreen(opts) {
+        document.getElementById('card-screen').style.display = 'none';
+        document.getElementById('problem-screen').style.display = 'block';
+        document.getElementById('problem-title').textContent = opts.title;
+        document.getElementById('problem-summary').textContent = opts.summary;
+
+        var list = document.getElementById('problem-list');
+        list.innerHTML = '';
+        opts.items.forEach(function (it) {
+            var li = document.createElement('li');
+            var tag = document.createElement('span');
+            tag.className = 'tag';
+            tag.textContent = it.tag;
+            var txt = document.createElement('span');
+            txt.textContent = it.text;
+            li.appendChild(tag);
+            li.appendChild(txt);
+            list.appendChild(li);
+        });
+
+        var tips = document.getElementById('problem-tips');
+        tips.innerHTML = '';
+        if (opts.tips && opts.tips.length) {
+            tips.appendChild(document.createTextNode('자주 생기는 원인'));
+            var ul = document.createElement('ul');
+            opts.tips.forEach(function (t) {
+                var li = document.createElement('li');
+                li.textContent = t;
+                ul.appendChild(li);
+            });
+            tips.appendChild(ul);
+            tips.style.display = 'block';
+        } else {
+            tips.style.display = 'none';
+        }
+
+        var btn = document.getElementById('partial-btn');
+        if (opts.buttonText) {
+            btn.textContent = opts.buttonText;
+            btn.style.display = 'block';
+            btn.onclick = opts.onButton;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    function startDeck(list) {
+        deck = list;
+        cur = 0;
+        document.getElementById('problem-screen').style.display = 'none';
+        document.getElementById('card-screen').style.display = 'block';
+        render();
+    }
+
+    function init() {
+        // 데이터 문법 오류: ③ 블록이 아예 실행되지 못한 경우
+        if (typeof cards === 'undefined') {
+            var items = window.__dataErrors.map(function (er) {
+                return { tag: er.line ? ('약 ' + er.line + '줄') : '오류', text: er.msg };
+            });
+            if (!items.length) items.push({ tag: '오류', text: 'cards를 찾을 수 없습니다. const cards = [ ... ]; 형태가 맞는지 확인하세요.' });
+            showProblemScreen({
+                title: '⚠️ 카드 데이터를 읽지 못했어요',
+                summary: '데이터 부분에 문법 오류가 있어서 프로그램이 멈췄습니다. 아래 줄 근처를 확인하세요.',
+                items: items,
+                tips: [
+                    '문장 안에 큰따옴표(")가 들어 있음 → 작은따옴표(\')로 바꾸기',
+                    '카드와 카드 사이 쉼표(,) 빠짐, 또는 맨 끝의 ]; 가 지워짐',
+                    '문장 한가운데에서 줄이 바뀜 (한 문장은 한 줄로)',
+                    '붙여넣은 글에 // 가 포함되어 뒷부분이 주석 처리됨'
+                ]
+            });
+            return;
+        }
+
+        var result = validateCards(cards);
+
+        if (result.errors.length === 0) {
+            startDeck(result.valid);
+            return;
+        }
+
+        var total = Array.isArray(cards) ? cards.length : 0;
+        var badCount = total - result.valid.length;
+        showProblemScreen({
+            title: '⚠️ 고칠 곳이 ' + result.errors.length + '군데 있어요',
+            summary: badCount > 0
+                ? '전체 ' + total + '장 중 ' + badCount + '장에 문제가 있습니다. 데이터를 고치고 새로고침하세요.'
+                : '카드 데이터를 확인하고 새로고침하세요.',
+            items: result.errors,
+            tips: ['카드마다 q(질문)와 a(정답)가 모두 있어야 하고, 둘 다 글자(따옴표로 감싼 문장)여야 합니다'],
+            buttonText: result.valid.length > 0 ? '오류 없는 ' + result.valid.length + '장만 먼저 보기' : null,
+            onButton: function () { startDeck(result.valid); }
+        });
+    }
+
+    /* ---------- 카드 표시 ---------- */
+    // 질문 앞의 ★(중요도)와 끝의 [출처]를 따로 떼어 작은 표식으로 보여줍니다.
+    function parseQuestion(raw) {
+        var text = raw.trim();
+        var stars = '';
+        var src = '';
+        var m = text.match(/^([★☆]{1,5})\s*/);
+        if (m) { stars = m[1]; text = text.slice(m[0].length); }
+        var s = text.match(/\s*\[([^\]]{1,120})\]\s*$/);
+        if (s) { src = s[1]; text = text.slice(0, s.index); }
+        if (!text.trim()) { text = raw.trim(); stars = ''; src = ''; }
+        return { stars: stars, src: src, text: text };
+    }
+
+    function render() {
+        var c = deck[cur];
+        var p = parseQuestion(c.q);
+
+        document.getElementById('question').textContent = p.text;
+        document.getElementById('answer').textContent = c.a.trim();
+        document.getElementById('source').textContent = p.src ? '출처: ' + p.src : '';
+
+        var starsEl = document.getElementById('stars');
+        if (p.stars) {
+            var filled = (p.stars.match(/★/g) || []).length;
+            starsEl.textContent = p.stars;
+            starsEl.setAttribute('aria-label', '중요도 ' + p.stars.length + '개 중 ' + filled + '개');
+            starsEl.style.display = 'inline-block';
+        } else {
+            starsEl.style.display = 'none';
+        }
+
+        document.getElementById('current').textContent = cur + 1;
+        document.getElementById('total').textContent = deck.length;
+        document.getElementById('bar').style.width = ((cur + 1) / deck.length * 100) + '%';
+    }
+
+    function flip() { cardEl.classList.toggle('flipped'); }
+
+    function go(delta) {
+        cur = (cur + delta + deck.length) % deck.length;
+        clearTimeout(swapTimer);
+        if (cardEl.classList.contains('flipped') && !reduceMotion()) {
+            // 먼저 카드를 앞면으로 돌리고, 옆면이 되어 안 보일 때 내용을 바꿔서 다음 정답이 미리 비치지 않게 함
+            cardEl.classList.remove('flipped');
+            swapTimer = setTimeout(render, 300);
+        } else {
+            cardEl.classList.remove('flipped');
+            render();
+        }
+    }
+    function nextCard() { go(1); }
+    function prevCard() { go(-1); }
+
+    cardEl.addEventListener('click', flip);
+
+    document.addEventListener('keydown', function (e) {
+        if (document.getElementById('card-screen').style.display === 'none') return;
+        if (e.key === 'ArrowRight') { nextCard(); }
+        else if (e.key === 'ArrowLeft') { prevCard(); }
+        else if ((e.key === ' ' || e.key === 'Enter') && e.target.tagName !== 'BUTTON') { e.preventDefault(); flip(); }
+    });
+
+    // 스마트폰: 좌우로 밀어서 넘기기
+    var touchX = null, touchY = null;
+    cardEl.addEventListener('touchstart', function (e) {
+        touchX = e.touches[0].clientX;
+        touchY = e.touches[0].clientY;
+    }, { passive: true });
+    cardEl.addEventListener('touchend', function (e) {
+        if (touchX === null) return;
+        var dx = e.changedTouches[0].clientX - touchX;
+        var dy = e.changedTouches[0].clientY - touchY;
+        touchX = null;
+        if (Math.abs(dx) > 60 && Math.abs(dy) < 50) {
+            if (dx < 0) nextCard(); else prevCard();
+        }
+    }, { passive: true });
+
+    init();
+</script>
+</body>
+</html>

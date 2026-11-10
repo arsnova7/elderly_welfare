@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>노인복지론 퀴즈</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+    :root {
+        --primary: #b45309;
+        --bg-gray: #f4f6f8;
+        --success: #28a745;
+        --danger: #dc3545;
+    }
+    body { font-family: 'Pretendard', sans-serif; background-color: var(--bg-gray); margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
+    .container { width: 100%; max-width: 700px; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .header h1 { font-size: 1.8rem; color: #14213d; font-weight: 800; margin-bottom: 10px; word-break: keep-all; }
+    .header p { color: #55657d; font-weight: bold; font-size: 1.1rem; margin: 0; }
+    .header .score-text { margin-top: 6px; color: #166534; font-size: 1rem; }
+
+    .quiz-box { background: white; border-radius: 15px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .q-type { display: inline-block; background: #e0e7f1; color: #14213d; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; margin-bottom: 15px; font-weight: 700; }
+    #question-text { font-weight: bold; font-size: 1.2rem; margin-bottom: 25px; word-break: keep-all; line-height: 1.4; color: #14213d; }
+
+    .option-btn { width: 100%; text-align: left; padding: 16px; margin: 10px 0; border: 1.5px solid #e0e7f1; border-radius: 10px; background: white; cursor: pointer; font-size: 1.05rem; transition: 0.2s; line-height: 1.4; color: #2f3640; font-weight: 500; font-family: inherit; }
+    .option-btn:hover { background: #fff7ed; border-color: var(--primary); }
+    .option-btn:focus-visible, .btn-next:focus-visible, .result-btn:focus-visible { outline: 3px solid #14213d; outline-offset: 2px; }
+    .option-btn.correct { background: #e6fffa; border-color: var(--success); color: var(--success); font-weight: bold; }
+    .option-btn.wrong { background: #fff5f5; border-color: var(--danger); color: var(--danger); opacity: 0.6; }
+
+    .btn-next { width: 100%; padding: 16px; border-radius: 10px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; margin-top: 25px; display: none; font-size: 1.1rem; transition: 0.2s; font-family: inherit; }
+    .btn-next:hover { opacity: 0.9; transform: translateY(-2px); }
+
+    .hint-box, .exp-box { padding: 18px; border-radius: 10px; margin-top: 15px; display: none; line-height: 1.6; word-break: keep-all; font-size: 0.95rem; }
+    .hint-box { background: #fffbeb; border: 1px solid #fbd38d; color: #b45309; }
+    .exp-box { background: #f0fdf4; border: 1px solid #bbf7d0; color: #065f46; }
+
+    .result-card { background: white; border-radius: 20px; padding: 40px; text-align: center; display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+    .result-btn { width: 100%; padding: 16px; margin: 10px 0; border: 1.5px solid #e0e7f1; border-radius: 10px; background: white; cursor: pointer; font-size: 1.05rem; font-weight: bold; transition: 0.2s; font-family: inherit; }
+    .result-btn:hover { background: #f3f6fa; }
+    .result-score { margin: 6px 0 4px; font-size: 3.4rem; font-weight: 800; color: var(--primary); line-height: 1.1; }
+    .result-detail { margin: 0 0 10px; color: #55657d; line-height: 1.6; word-break: keep-all; }
+    #result-msg { margin: 0 0 18px; line-height: 1.6; word-break: keep-all; color: #14213d; font-weight: 600; }
+    .missed { text-align: left; margin: 0 0 18px; padding: 10px 16px; border: 1px solid #e0e7f1; border-radius: 10px; }
+    .missed summary { cursor: pointer; font-weight: 700; color: #14213d; padding: 4px 0; }
+    .missed ol { margin: 10px 0 4px; padding-left: 26px; font-size: 0.95rem; line-height: 1.55; word-break: keep-all; color: #2f3640; }
+    .missed li { margin-bottom: 8px; }
+
+    /* 문제 화면 아래의 목록으로 돌아가기 버튼 */
+    .list-btn { width: 100%; padding: 14px; margin-top: 16px; border: 1.5px solid #cbd5e1; border-radius: 10px; background: white; color: #14213d; font-family: inherit; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .list-btn:hover { background: #f3f6fa; }
+    .list-btn:focus-visible { outline: 3px solid #14213d; outline-offset: 2px; }
+
+    /* 데이터 검사 결과 화면 */
+    .problem-card { display: none; background: white; border-radius: 15px; padding: 28px; border-left: 6px solid var(--danger); box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .problem-card h2 { margin: 0 0 8px; font-size: 1.3rem; color: #14213d; }
+    .problem-card .summary { margin: 0 0 16px; color: #55657d; line-height: 1.6; word-break: keep-all; }
+    .problem-list { list-style: none; margin: 0 0 8px; padding: 0; }
+    .problem-list li { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid #e0e7f1; line-height: 1.5; word-break: keep-all; }
+    .problem-list .tag { flex: none; min-width: 3.2rem; font-weight: 800; color: var(--danger); }
+    .problem-list .warn .tag { color: var(--primary); }
+    .problem-card .tips { margin: 12px 0 0; padding: 14px; background: #f3f6fa; border-radius: 10px; font-size: 0.92rem; line-height: 1.6; color: #2f3640; word-break: keep-all; }
+    .problem-card .tips ul { margin: 6px 0 0; padding-left: 20px; }
+    #partial-btn { width: 100%; padding: 16px; margin-top: 16px; border: none; border-radius: 10px; background: var(--primary); color: white; font-weight: bold; font-size: 1.05rem; cursor: pointer; font-family: inherit; }
+    #partial-btn:focus-visible { outline: 3px solid #14213d; outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="container">
+    <div id="problem-screen" class="problem-card" role="alert">
+        <h2 id="problem-title"></h2>
+        <p id="problem-summary" class="summary"></p>
+        <ul id="problem-list" class="problem-list"></ul>
+        <div id="problem-tips" class="tips"></div>
+        <button id="partial-btn" type="button"></button>
+    </div>
+
+    <div id="quiz-screen">
+        <div class="header">
+            <h1 id="lecture-title"></h1>
+            <p id="progress-text"></p>
+            <p id="score-text" class="score-text"></p>
+        </div>
+        <div class="quiz-box">
+            <div id="question-type" class="q-type">개념확인</div>
+            <div id="question-text"></div>
+            <div id="options-container"></div>
+
+            <div id="hint-box" class="hint-box">💡 <b>힌트:</b> <span id="hint-text"></span></div>
+            <div id="exp-box" class="exp-box">✅ <b>정답 및 해설:</b> <span id="exp-text"></span></div>
+
+            <button id="next-btn" class="btn-next" type="button" onclick="nextQuestion()">다음 문제로</button>
+        </div>
+
+        <button class="list-btn" type="button" onclick="goList()">🏠 목록으로 돌아가기</button>
+    </div>
+
+    <div id="result-screen" class="result-card">
+        <h2 id="result-title">🎊 학습을 마쳤습니다!</h2>
+        <p id="result-score" class="result-score"></p>
+        <p id="result-detail" class="result-detail"></p>
+        <p id="result-msg"></p>
+        <details id="missed-details" class="missed">
+            <summary id="missed-summary"></summary>
+            <ol id="missed-list"></ol>
+        </details>
+        <button id="retry-missed-btn" class="result-btn" type="button" style="background:var(--primary); color:white; border:none;" onclick="retryMissed()"></button>
+        <button class="result-btn" type="button" onclick="retryAll()">🔄 처음부터 다시 풀기</button>
+        <button class="result-btn" type="button" onclick="location.href='index.html'">🏠 목록으로 돌아가기</button>
+    </div>
+</div>
+
+<!-- ① 오류 수집용: 반드시 맨 위(②, ③보다 앞)에 두세요. 수정하지 마세요. -->
+<script>
+    window.__dataErrors = [];
+    window.addEventListener('error', function (e) {
+        window.__dataErrors.push({ msg: e.message, line: e.lineno });
+    });
+</script>
+
+<!-- ② 장 설정: 새 장을 만들 때 번호(1~15)와 제목만 고치세요. -->
+<script>
+    const LECTURE = { no: 13, title: "노인상담" };
+</script>
+
+<!-- ③ 퀴즈 데이터: 노트북LM이 만든 const quizData = [...]; 를 통째로 덮어쓰세요.
+     아래 1문항은 화면 확인용 예시입니다. 덮어쓸 때 이 예시도 같이 지우세요.
+     문제마다 type, q, o, a, h, e 가 모두 있어야 하고, a는 첫 번째 보기가 0입니다. -->
+<script>
+    const quizData = [
+        {
+            "type": "개념확인",
+    "q": "다음 중 노인상담의 특성으로 알맞은 것은? [교재 13장 13.1절 노인상담의 이해, 워크북 13장 연습문제 1번, 기말 연습문제정리 13강 Q5]",
+    "o": [
+      "클라이언트의 다양한 경험이 상담자에게 긴장을 유발할 수 있다.",
+      "클라이언트의 높은 연령은 상담자에 대한 신뢰 형성에 긍정적으로 작용한다.",
+      "클라이언트의 강한 신념은 상담에 긍정적으로 작용한다.",
+      "클라이언트의 저항이 거의 없다."
+    ],
+    "a": 0,
+    "h": "내담자인 노인의 풍부한 인생 경험과 축적된 지식은 상담자에게 긴장감을 줄 수 있습니다.",
+    "e": "노인상담에서 클라이언트는 상담자보다 연장자인 경우가 많아 라포 형성에 어려움이 있을 수 있고, 강한 자기신념으로 저항이 강해질 수 있으며, 풍부한 인생경험과 지식의 축적이 상담자에게 긴장을 유발할 수 있습니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 노인상담의 원칙에 대한 설명으로 알맞지 않은 것은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장 연습문제 2번, 기말 연습문제정리 13강 Q6, 정리하기+강의연습문제 13강 3번]",
+    "o": [
+      "심판적 태도를 취해야 한다.",
+      "의도적 감정표현을 할 수 있도록 돕는다.",
+      "통제된 정서적 관여를 원칙으로 한다.",
+      "죽음에 대한 대비를 해야 한다."
+    ],
+    "a": 0,
+    "h": "상담자는 내담자의 사고와 감정을 비판하거나 속단하지 않는 '비심판적 태도'를 지켜야 합니다.",
+    "e": "바이스텍(Biestek)의 원칙에 기반한 노인상담의 원칙은 개별화, 의도적 감정표현, 통제된 정서적 관여, 수용, 비심판적 태도, 자기결정, 비밀보장, 죽음에 대한 대비입니다. 따라서 즉각적 판단이나 비난을 피하는 '비심판적 태도'를 취해야 하므로 '심판적 태도'는 틀린 설명입니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 노인상담의 기술에 대한 설명으로 알맞지 않은 것은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장 연습문제 3번, 기말 연습문제정리 13강 Q7]",
+    "o": [
+      "언어적 의사소통의 기술은 얼굴표정, 목소리 톤 등이 해당된다.",
+      "상담의 기술은 크게 비언어적 의사소통의 기술과 언어적 의사소통의 기술로 구분될 수 있다.",
+      "상담은 단순히 언어적 요소만 고려하는 것이 아니라 그 사람의 비언어적 요소까지 고려해야 한다.",
+      "경청은 모든 상담에서 가장 기본적인 전제이다."
+    ],
+    "a": 0,
+    "h": "얼굴표정과 목소리 톤은 언어가 아닌 '비언어적 의사소통 기술'에 해당합니다.",
+    "e": "얼굴표정, 목소리 톤, 시선 접촉, 신체적 자세 등은 '비언어적 의사소통 기술'에 속합니다. 언어적 의사소통 기술에는 경청, 질문기법, 지지적 언어반응, 재구성, 명료화 등이 포함됩니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음에서 설명하는 상담기법은? '노인의 인생 전반에 대한 회고와 특정 사건이나 경험을 기억해 내는 과정을 통해 과거를 돌아보고 자신의 생을 정리하도록 원조하는 것이다. 집단상담에서 많이 사용되며, 생애곡선을 이용할 수 있다.' [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장 연습문제 4번, 기말 연습문제정리 13강 Q8]",
+    "o": [
+      "회상요법",
+      "인지적 행동수정기법",
+      "인정요법",
+      "존엄치료요법"
+    ],
+    "a": 0,
+    "h": "과거의 기억과 생애 사건을 되짚어보며 삶의 의미를 찾고 생애곡선을 활용하는 기법입니다.",
+    "e": "제시문은 노인이 자신의 과거 사건과 경험을 되짚어보며 생애를 정리하고 자아통합을 이루도록 돕는 '회상요법(Reminiscence Therapy)'에 대한 설명입니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 노인상담의 과정에 대한 설명으로 알맞은 것은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장 연습문제 5번, 기말 연습문제정리 13강 Q9]",
+    "o": [
+      "종결단계는 클라이언트와 상담자의 관계가 끝나는 것을 말한다.",
+      "노인상담의 과정은 개입단계-사정단계-종결단계로 구분할 수 있다.",
+      "개입단계는 서비스 제공 계획을 세우는 과정이다.",
+      "개입단계에서는 개입을 최대화해야 한다."
+    ],
+    "a": 0,
+    "h": "종결단계는 평가와 함께 상담자와 클라이언트의 전문적 원조 관계가 종료되는 시점입니다.",
+    "e": "종결단계는 클라이언트와 상담자의 관계가 종료되는 시점입니다. ① 노인상담 과정은 사정-개입-종결 순이며, ② 서비스 제공 계획 수립은 '사정단계'의 과업이고, ③ 벌링게임의 지침에 따르면 노인의 자립을 위해 개입은 '최소화'해야 합니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "다음 중 노인상담이 그동안 다른 상담 분야에 비해 중요하게 인정받지 못한 이유에 대한 설명으로 적절한 것은? [교재 13장 13.1절 노인상담의 이해, 기말 연습문제정리 13강 Q1, 정리하기+강의연습문제 13강 1번]",
+    "o": [
+      "노인문제의 치료나 해결이 어렵다는 인식 때문이다.",
+      "노인의 문제를 일차적 문제로 인식하였기 때문이다.",
+      "노인은 감정과 욕구의 표현을 남발하여 상담의 대상이 어렵기 때문이다.",
+      "노인의 문제는 전적으로 가족의 책임이기 때문이다."
+    ],
+    "a": 0,
+    "h": "신체적 노화의 지속과 돌봄의 장기성으로 인해 문제 해결이 어렵다고 여겨졌습니다.",
+    "e": "노인상담이 발전하지 못한 3대 이유는 ① 노인의 문제를 비생산적 인구의 '이차적 문제'로 인식함, ② 노인은 감정과 욕구의 표현을 '꺼리기' 때문에 상담 대상이 되기 어렵다고 봄, ③ 신체 퇴행과 가족 문제 연계로 '치료나 해결이 어렵다'고 인식했기 때문입니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "노인상담에 있어서 상담자가 영향을 받을 수 있는 측면으로 맞지 않는 것은? [교재 13장 13.1절 노인상담의 이해, 기말 연습문제정리 13강 Q2, 정리하기+강의연습문제 13강 2번]",
+    "o": [
+      "내담자의 다양한 경험과 지식축적은 상담자를 여유있게 만들고 상담을 긍정적으로 이끌어 낼 수 있다.",
+      "강력한 신념을 가진 내담자의 특성으로 인해 상담에 저항이 강할 수 있다.",
+      "내담자의 인생경험의 폭이 넓어 상담자를 긴장하게 할 수 있어 상담에 영향을 미칠 수 있다.",
+      "내담자의 높은 연령으로 인해 라포 형성에 어려움이 발생할 수 있다."
+    ],
+    "a": 0,
+    "h": "내담자의 다양한 경험과 지식은 상담자에게 오히려 부담과 긴장을 유발할 수 있습니다.",
+    "e": "노인의 풍부한 인생 경험과 지식의 축적은 상담자를 여유 있게 만드는 것이 아니라, 상담자에게 '긴장과 위축을 유발'하여 상담 진행에 부담 요인으로 작용할 수 있습니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음 노인상담의 기술 중 언어로 표현하지 못한 비언어적 실마리의 의미에 대해 묻는 것으로 \"제가 보기에는~\", \"제가 듣기에는~\"과 같이 표현하는 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-2, 기말 연습문제정리 13강 Q3]",
+    "o": [
+      "비언어적 단서 탐색",
+      "명료화",
+      "자기노출",
+      "도전"
+    ],
+    "a": 0,
+    "h": "비언어적 단서의 의미를 확인하기 위해 조심스럽게 인상을 전달하는 기법입니다.",
+    "e": "클라이언트의 비언어적 단서(표정, 자세, 침묵 등)의 의미에 대해 '제가 보기에는...', '제가 듣기에는...'과 같이 묻는 기법은 '비언어적 단서 탐색'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "캐나다의 초치노프(Chochinov) 박사가 개발한 것으로, 죽음을 앞둔 사람의 존엄을 이해하고 이를 유지할 수 있도록 아홉 가지 질문을 활용하는 치료요법은? [교재 13장 13.2절 노인상담의 기술과 과정, 기말 연습문제정리 13강 Q4, 정리하기+강의연습문제 13강 4번]",
+    "o": [
+      "존엄치료",
+      "인정요법",
+      "생애곡선",
+      "회상요법"
+    ],
+    "a": 0,
+    "h": "죽음을 앞둔 환자의 존엄성과 유언적 서사를 정리해 주는 9가지 질문 치료법입니다.",
+    "e": "초치노프 박사가 개발한 존엄치료(Dignity Therapy)는 임종을 앞둔 환자가 9가지 질문을 통해 자신의 삶을 정리하고 남겨진 가족에게 영구적 기록 문서를 남김으로써 존엄과 평안을 얻도록 돕는 치료요법입니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "노인상담의 기술로 적절하지 않은 것은? [교재 13장 13.2절 노인상담의 기술과 과정, 2013년 기출 3번]",
+    "o": [
+      "장기면접기법",
+      "적극적 경청",
+      "요약반복기법",
+      "회상요법"
+    ],
+    "a": 0,
+    "h": "노인은 신체적 피로와 주의집중력 한계로 인해 면접 시간이 너무 길어지면 안 됩니다.",
+    "e": "노인상담에서는 노인의 체력 저하와 집중력 한계를 고려하여 1회 상담 시간을 40~50분 내외로 적절히 조절해야 하며, 피로를 가중시키는 장기면접은 지양해야 합니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음 설명에 대한 노인상담기술은 무엇인가? '상담자는 이야기의 요점을 반복하여 얘기해 줌으로써 노인 스스로가 자신의 생각을 정리하게 하여 이야기의 초점을 잡을 수 있도록 한다.' [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-2, 2014년 기출 29번]",
+    "o": [
+      "요약반복법",
+      "회상요법",
+      "질문기법",
+      "적극적 경청"
+    ],
+    "a": 0,
+    "h": "상대방 이야기의 요점을 정리하여 다시 말해 줌으로써 생각을 정리하도록 돕는 기법입니다.",
+    "e": "클라이언트가 한 말의 요점을 다른 단어나 간결한 표현으로 재구성하여 반복해 줌으로써 생각의 초점을 잡고 경청받고 있음을 확인시켜 주는 기법은 '요약반복법(언어의 재구성)'입니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "노인상담의 기술 중 다음 설명에 해당하는 것은? '1분 동안 상담자가 얘기하고, 2분 동안 이용자의 의사소통을 귀담아 듣고, 3분 동안 이용자가 한 말의 의미를 깊이 되새기며 어떻게 반응할지 깊이 있게 생각해야 한다.' [교재 13장 13.2절 노인상담의 기술과 과정, 2015년 기출 34번]",
+    "o": [
+      "적극적 경청 (1·2·3 원칙)",
+      "요약반복기법",
+      "질문기법",
+      "회상요법"
+    ],
+    "a": 0,
+    "h": "1분 말하고, 2분 듣고, 3분 생각하는 '1·2·3 원칙'의 경청 기술입니다.",
+    "e": "상담자가 1분 말하고, 2분 동안 귀 기울여 듣고, 3분 동안 클라이언트가 한 이야기의 의미와 대응 방안을 깊이 생각하는 원칙은 적극적 경청의 대표적인 '1·2·3 원칙'입니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "노인상담과 일반상담의 차이로 올바르지 않은 것은? [교재 13장 13.1절 노인상담의 이해, 2019년 기출 31번]",
+    "o": [
+      "라포형성의 중요성",
+      "실생활 적용",
+      "체면 존중",
+      "종결과정 집중"
+    ],
+    "a": 0,
+    "h": "벌링게임(1995)이 제시한 노인상담과 일반상담의 3대 차이점은 '실생활 적용, 체면 존중, 종결과정 집중'입니다.",
+    "e": "벌링게임(1995)은 노인상담과 일반상담의 핵심 차이로 '실생활 적용', '체면 존중', '종결과정 집중'을 제시하였습니다. 라포 형성의 중요성은 모든 일반상담과 공통되는 요소이지 노인상담만의 차별적 차이점으로 제시된 항목이 아닙니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "노인 상담 시 상담자는 노인을 인간적으로 존중하고 다양한 모습을 가진 존재로 그대로 받아들여야 한다. 이에 해당하는 노인상담의 원칙은? [교재 13장 13.2절 노인상담의 기술과 과정, 2019년 기출 32번]",
+    "o": [
+      "자기결정의 원칙",
+      "수용의 원칙",
+      "비밀보장의 원칙",
+      "개별화의 원칙"
+    ],
+    "a": 1,
+    "h": "있는 그대로의 모습을 인간적으로 존중하고 받아들이는 원칙입니다.",
+    "e": "상담자가 노인의 약점이나 부정적 특성을 포함한 다양한 모습을 편견 없이 있는 그대로 인정하고 존중하며 받아들이는 원칙은 '수용(Acceptance)의 원칙'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "다음 설명에 해당하는 노인상담의 주요 원칙은? '상담자는 노인이 가족과 사회적 관계에서 가질 수 있는 부정적 감정을 표현하도록 하고 이를 긍정적 감정으로 전환시키는 역할을 한다.' [교재 13장 13.2절 노인상담의 기술과 과정, 2019년 기출 33번]",
+    "o": [
+      "비의도적 감정표현",
+      "의도적 감정표현",
+      "심판적 태도",
+      "통제된 정서적 관여"
+    ],
+    "a": 1,
+    "h": "억압된 부정적 감정을 의도적으로 분출하고 표현하도록 돕는 원칙입니다.",
+    "e": "노인이 억눌려 있던 분노, 슬픔, 불안 등 부정적 감정을 자유롭게 표출할 수 있도록 격려하고, 이를 수용하여 긍정적 감정으로 전환하도록 돕는 원칙은 '의도적 감정표현(Purposeful Expression of Feelings)'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "노인상담의 정의에 대한 설명으로 가장 적절하지 않은 것은? [교재 13장 13.1절 노인상담의 이해, [보충]]",
+    "o": [
+      "도움을 필요로 하는 노인이 상담자와 전문적인 원조관계를 형성하는 과정이다.",
+      "상담의 주체는 비전문가인 일반 자원봉사자 중심이어야 법적 효력을 갖는다.",
+      "은퇴문제, 가족문제, 경제 및 건강문제를 해결하고 인간적 성장을 도모한다.",
+      "노인과 그 가족의 사회적·심리적 기능을 향상시키는 것을 목표로 한다."
+    ],
+    "a": 1,
+    "h": "노인상담은 전문적인 훈련을 받은 전문가가 주체가 되어 전문적 원조관계를 형성합니다.",
+    "e": "노인상담은 전문가가 주체가 되어 전문적인 원조관계를 형성하여 문제를 해결하는 실질적인 사회복지 서비스 과정입니다. 비전문가 자원봉사자 중심이라는 설명은 틀렸습니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "벌링게임(Burlingame, 1995)이 제시한 노년기 발달과업 기반 노인상담의 목적에 해당하지 않는 것은? [교재 13장 13.1절 노인상담의 이해, 워크북 13장, [보충]]",
+    "o": [
+      "신체적 강점을 강화하고 건강 약화에 적응하도록 돕는다.",
+      "노인의 모든 사유재산을 복지기관에 강제 기부하도록 설득한다.",
+      "배우자나 친구 등 중요한 사람들의 상실에 적응하도록 돕는다.",
+      "은퇴와 재정적인 변화에 대처하고 삶의 통제력을 유지하도록 돕는다."
+    ],
+    "a": 1,
+    "h": "벌링게임의 8대 목적: 의료·사회지원 동원, 건강약화 적응, 주거욕구 충족, 새로운 역할, 관계 수정, 상실 적응, 은퇴대처, 삶의 통제력 유지입니다.",
+    "e": "사유재산 기부 강요는 노인상담의 목적이 아니며 자기결정권 침해입니다. 벌링게임은 의료지원 동원, 건강약화 적응, 주거욕구 충족, 지역사회 기여, 관계 수정, 상실 극복, 은퇴 대처, 통제력 유지를 제시하였습니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "벌링게임(1995)이 제시한 노인상담과 일반상담의 차이 중 '노인의 체면을 존중하면서 방어기제와 전이를 더 관대하게 받아들여야 한다'는 특성은? [교재 13장 13.1절 노인상담의 이해, [보충]]",
+    "o": [
+      "실생활 적용",
+      "체면 존중",
+      "종결과정 집중",
+      "권위주의 고착"
+    ],
+    "a": 1,
+    "h": "노인이 지켜온 체면과 자존심을 배려하고 방어기제를 너그럽게 수용하는 특성입니다.",
+    "e": "벌링게임은 노인상담에서 노인의 살아온 자존심과 '체면 존중'이 필수적이며, 방어기제와 전이를 일반 내담자보다 훨씬 관대하게 수용해야 한다고 보았습니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "벌링게임(1995)이 제시한 노인상담의 차이점 중 '노인의 임종이나 요양시설 입소 등으로 상담이 마무리되는 경우가 많아 더 많은 에너지를 집중해야 한다'는 특성은? [교재 13장 13.1절 노인상담의 이해, [보충]]",
+    "o": [
+      "실생활 적용",
+      "종결과정 집중",
+      "체면 존중",
+      "사정단계 배제"
+    ],
+    "a": 1,
+    "h": "임종, 시설 입소, 이별 등 노년기의 특수성으로 인해 마무리에 에너지를 쏟아야 합니다.",
+    "e": "노인상담은 노인의 임종이나 요양시설 입소 등으로 상담이 마무리되는 경우가 많아 종결에 따르는 상실감과 이별의 슬픔을 다루는 '종결과정 집중'이 매우 중요합니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "갈랜드(Garland)가 분류한 노인 집단상담의 4가지 유형 중 '전통적인 정신분석에 근거한 통찰집단으로, 클라이언트의 성격 변화에 초점을 두는 집단'은? [교재 13장 13.1절 노인상담의 이해, 워크북 13장, [보충]]",
+    "o": [
+      "지지와 안정화 집단",
+      "회복집단",
+      "성장 및 교육 집단",
+      "과제 및 활동 집단"
+    ],
+    "a": 1,
+    "h": "정신분석적 통찰과 성격 변화를 추구하는 집단입니다.",
+    "e": "갈랜드의 집단상담 유형 중 '회복집단'은 전통적인 정신분석에 기반하여 클라이언트의 통찰과 성격 변화를 목표로 합니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "갈랜드(Garland)의 노인 집단상담 유형 중 '이혼, 사별, 경제적 위기 등의 상황에서 효과적이며 클라이언트의 자아 및 적응능력에 초점을 두는 집단'은? [교재 13장 13.1절 노인상담의 이해, 워크북 13장, [보충]]",
+    "o": [
+      "회복집단",
+      "지지와 안정화 집단",
+      "성장 및 교육 집단",
+      "과제 및 활동 집단"
+    ],
+    "a": 1,
+    "h": "사별, 위기 상황에서 정서적 지지와 자아 적응을 돕는 집단입니다.",
+    "e": "이혼, 사별, 경제적 위기 등 급격한 상실 상황에서 클라이언트의 자아 기능을 지지하고 현실 적응능력을 회복시키는 집단은 '지지와 안정화 집단'입니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "갈랜드(Garland)의 노인 집단상담 유형 중 '퇴직 후 생활에 필요한 새로운 역할과 기능(예: 요리, 디지털 기기 활용 등)을 훈련하는 데 초점을 두는 집단'은? [교재 13장 13.1절 노인상담의 이해, 강의록 13강, [보충]]",
+    "o": [
+      "회복집단",
+      "성장 및 교육 집단",
+      "지지와 안정화 집단",
+      "과제 및 활동 집단"
+    ],
+    "a": 1,
+    "h": "새로운 역할 습득과 생활 기능 훈련을 제공하는 집단입니다.",
+    "e": "생활에 필요한 역할과 기능을 익히지 못했을 때 훈련과 교육을 통해 성장을 도모하는 집단은 '성장 및 교육 집단'입니다."
+  },
+  {
+    "type": "비교·분석",
+    "q": "갈랜드(Garland)의 노인 집단상담 유형 중 '집단의 생산 활동이나 과업 달성에 일차적인 목적이 있으며, 개별 구성원의 역할 분담이 중요한 집단'은? [교재 13장 13.1절 노인상담의 이해, 워크북 13장, [보충]]",
+    "o": [
+      "회복집단",
+      "과제 및 활동 집단",
+      "지지와 안정화 집단",
+      "성장 및 교육 집단"
+    ],
+    "a": 1,
+    "h": "과업 완수와 활동 생산에 일차적 목적을 둔 집단입니다.",
+    "e": "집단의 특정 과업 완수나 생산적 활동에 초점을 맞추며 구성원 개개인의 역할이 강조되는 집단은 '과제 및 활동 집단'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "노인상담의 원칙 중 '노인을 단순히 노화와 노령이라는 범주로 획일화하지 않고, 고유한 개성과 개인적 역사를 가진 독립적 존재로 인식하는 원칙'은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장, [보충]]",
+    "o": [
+      "자기결정의 원칙",
+      "개별화의 원칙",
+      "비밀보장의 원칙",
+      "통제된 정서적 관여"
+    ],
+    "a": 1,
+    "h": "노인을 범주화하지 않고 고유한 개인으로 존중하는 원칙입니다.",
+    "e": "노인을 나이나 질환으로 일반화하지 않고, 각자의 성격, 인생 경험, 욕구를 가진 개별적 존재로 대우하는 원칙은 '개별화(Individualization)의 원칙'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "노인상담의 원칙 중 '상담자가 자신의 감정과 정서를 적절하게 조절하면서, 노인의 감정을 공감적으로 수용하고 긍정적 태도를 유지하는 원칙'은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장, [보충]]",
+    "o": [
+      "과도한 정서적 몰입",
+      "통제된 정서적 관여",
+      "비심판적 태도",
+      "죽음에 대한 대비"
+    ],
+    "a": 1,
+    "h": "상담자의 정서적 반응을 전문적으로 조절하고 공감하는 원칙입니다.",
+    "e": "상담자가 맹목적으로 감정에 휩쓸리지 않고 자신의 감정을 의도적으로 조절·통제하면서 클라이언트의 감정에 공감하고 관여하는 원칙은 '통제된 정서적 관여(Controlled Emotional Involvement)'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "노인상담의 원칙 중 '상담자가 노인에게 여생에 대한 심리적 준비를 하게 하고, 죽음에 대한 불안을 다루어 삶을 긍정적으로 회고하고 자아통합을 이루도록 돕는 원칙'은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장, [보충]]",
+    "o": [
+      "비밀보장의 원칙",
+      "자기결정의 원칙",
+      "죽음에 대한 대비의 원칙",
+      "개별화의 원칙"
+    ],
+    "a": 2,
+    "h": "노년기 발달과업인 자아통합과 품위 있는 임종을 준비하도록 돕는 원칙입니다.",
+    "e": "일반상담 원칙에 더하여 노인상담에서 특히 강조되는 원칙으로, 죽음의 불안을 완화하고 삶을 자아통합으로 이끌도록 돕는 것은 '죽음에 대한 대비의 원칙'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "경청의 기술 중 '\"아, 예\", \"알겠어요\" 등 단순한 언어로 노인의 말에 동의하거나 이해하고 있음을 전달하여 계속 이야기하도록 격려하는 기법'은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-2, [보충]]",
+    "o": [
+      "명료화",
+      "도전",
+      "지지적 언어반응",
+      "자기노출"
+    ],
+    "a": 2,
+    "h": "이야기를 계속 이어가도록 격려하는 단순한 긍정 반응입니다.",
+    "e": "단순한 말 한마디로 이해와 동의를 표하며 노인이 대화를 지속하도록 지지하고 촉진하는 기법은 '지지적 언어반응'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "경청의 기술 중 '노인의 감정에 대해 \"그렇게 느끼시는 것은 아주 정상적인 것입니다\"와 같은 반응을 통해 수용과 격려를 보여주는 기법'은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-2, [보충]]",
+    "o": [
+      "언어의 재구성",
+      "비언어적 단서 탐색",
+      "감정의 성찰적 반응",
+      "도전"
+    ],
+    "a": 2,
+    "h": "클라이언트의 감정을 정상적인 것으로 정당화하고 지지해 주는 반응입니다.",
+    "e": "클라이언트가 느끼는 분노, 슬픔, 불안이 비정상이 아니라 누구나 겪을 수 있는 자연스러운 반응임을 확인시켜 주는 기법은 '감정의 성찰적 반응'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "경청의 기술 중 '노인이 말한 내용 중 모호하거나 불분명한 점에 대해 좀 더 명확하게 설명해 달라고 요청하여 의미를 분명히 하는 기법'은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-2, [보충]]",
+    "o": [
+      "자기노출",
+      "지지적 언어반응",
+      "명료화",
+      "회상요법"
+    ],
+    "a": 2,
+    "h": "모호한 표현을 분명하게 밝혀달라고 요청하는 기법입니다.",
+    "e": "클라이언트의 말에서 모호하거나 혼란스러운 부분을 구체적으로 설명해 달라고 요청하여 상호 간에 정확한 이해를 도모하는 기법은 '명료화(Clarification)'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "경청의 기술 중 '노인의 말들 간의 불일치, 말과 행동 간의 불일치, 언어와 비언어 간의 불일치를 직접 지적하여 주요 문제와 감정을 명확히 직면시키는 기법'은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-2, [보충]]",
+    "o": [
+      "지지적 언어반응",
+      "자기노출",
+      "도전 (직면)",
+      "비언어적 단서 탐색"
+    ],
+    "a": 2,
+    "h": "모순이나 불일치를 직접 지적하여 현실을 직면하게 하는 기법입니다.",
+    "e": "말과 행동의 불일치나 모순된 진술을 직접 지적하여 갈등과 문제를 명확히 인식하게 하는 기법은 '도전(Challenge/직면)'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "경청의 기술 중 '상담자 자신의 개인적인 관찰, 경험, 생각을 짧고 간결하게 노인과 공유함으로써 신뢰 형성을 돕는 기법'은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-2, [보충]]",
+    "o": [
+      "명료화",
+      "언어의 재구성",
+      "자기노출 (Self-disclosure)",
+      "도전"
+    ],
+    "a": 2,
+    "h": "상담자 자신의 적절한 경험을 나누는 기법입니다.",
+    "e": "상담자가 자신의 개인적 경험이나 생각을 내담자에게 유익한 범위 내에서 간결하게 이야기하여 친밀감과 신뢰를 형성하는 기법은 '자기노출(Self-disclosure)'입니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "치매노인과의 효과적인 의사소통 방법에 대한 설명으로 올바르지 않은 것은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장, [보충]]",
+    "o": [
+      "짧고 명확한 문장을 사용하며 천천히 또박또박 말한다.",
+      "지나치게 복잡한 선택지보다는 단순한 질문으로 대답을 유도한다.",
+      "노인이 문맥에 맞지 않는 엉뚱한 답변을 할 경우 즉시 잘못을 호되게 지적하고 훈계해야 한다.",
+      "상대방이 위축되지 않도록 눈을 맞추고 같은 눈높이에서 대화한다."
+    ],
+    "a": 2,
+    "h": "문맥에 맞지 않는 말이라도 조롱하거나 반박하지 않고 감정을 인정하고 경청해야 합니다.",
+    "e": "치매노인과 소통할 때는 문맥에 맞지 않거나 틀린 말을 하더라도 무시하거나 지적·조롱하지 않고 존중하며 경청하는 태도를 유지해야 안정감을 느끼고 소통이 이어집니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "해결중심 단기치료의 질문기법 중 '구체적 사항을 질문하여 클라이언트를 특정 문제나 사항에 집중하게 만드는 질문'은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-3, [보충]]",
+    "o": [
+      "기적질문",
+      "대처질문",
+      "초점질문",
+      "순환질문"
+    ],
+    "a": 2,
+    "h": "\"문제가 무엇입니까?\", \"문제가 생긴 지 얼마나 오래되었습니까?\"와 같이 구체적 사실에 초점을 맞추는 질문입니다.",
+    "e": "문제의 발생 시기나 구체적 내용을 짚어 클라이언트를 특정 사항에 집중하도록 유도하는 질문은 '초점질문'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "해결중심 단기치료의 질문기법 중 '\"기적처럼 문제가 해결되었다면 무엇이 달라지겠습니까?\"와 같이 미래지향적인 희망과 변화된 모습을 상상하게 하는 질문'은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-3, [보충]]",
+    "o": [
+      "초점질문",
+      "대처질문",
+      "기적질문",
+      "순환질문"
+    ],
+    "a": 2,
+    "h": "하룻밤 사이에 기적이 일어나 문제가 해결된 상태를 상상하게 하는 질문입니다.",
+    "e": "문제가 해결된 미래의 상태를 상상하게 하여 긍정적 목표와 희망을 갖도록 돕는 질문은 '기적질문(Miracle Question)'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "해결중심 단기치료의 질문기법 중 '\"친구분이 그렇게 할 때 어르신께서는 무엇을 하셨습니까?\"와 같이 문제와 관련된 체계 구성원 간의 상호작용과 연관성을 파악하게 하는 질문'은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-3, [보충]]",
+    "o": [
+      "초점질문",
+      "기적질문",
+      "순환질문",
+      "대처질문"
+    ],
+    "a": 2,
+    "h": "당사자들 사이의 상호 연관성과 순환적 인과관계를 돌아보게 하는 질문입니다.",
+    "e": "자신과 타인 간의 행동 및 감정의 상호작용을 객관적으로 조망하게 하는 질문은 '순환질문(Circular Question)'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "해결중심 단기치료의 질문기법 중 '\"그렇게 힘든 고통 속에서도 상황이 더 나빠지지 않도록 지금까지 어떻게 견디고 대처하셨습니까?\"와 같이 내담자의 생존 자원과 강점에 초점을 맞추는 질문'은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-3, [보충]]",
+    "o": [
+      "기적질문",
+      "초점질문",
+      "대처질문",
+      "순환질문"
+    ],
+    "a": 2,
+    "h": "절망적 상황 속에서도 버텨낸 강점과 대처 방식을 발견하게 하는 질문입니다.",
+    "e": "고통스러운 위기 상황에서 클라이언트가 포기하지 않고 생존하기 위해 해 온 노력과 강점을 발견하게 하는 질문은 '대처질문(Coping Question)'입니다."
+  },
+  {
+    "type": "이론·학자",
+    "q": "마호니(Mahoney, 1974)가 개발한 기법으로, 클라이언트의 불합리한 사고과정과 잘못된 논리를 합리적 사고 유형으로 대치시키는 인지행동 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-4, [보충]]",
+    "o": [
+      "인지적 자기지시",
+      "홍수기법",
+      "인지적 재구조화",
+      "내파기법"
+    ],
+    "a": 2,
+    "h": "비합리적 가정을 논리적이고 합리적인 사고로 재구성하는 기법입니다.",
+    "e": "마호니가 개발한 '인지적 재구조화(Cognitive Restructuring)'는 비합리적 신념과 인지적 왜곡을 논리적 대안으로 바꾸어 행동 변화를 유도하는 기법입니다."
+  },
+  {
+    "type": "이론·학자",
+    "q": "마이켄바움(Meichenbaum, 1977)이 개발한 기법으로, 불안할 때 \"나는 최선을 다해 해볼 테야\"와 같이 긍정적 내적 대화와 자기진술을 반복하게 하여 자기패배적 사고를 극복하게 하는 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-4, [보충]]",
+    "o": [
+      "인지적 재구조화",
+      "홍수기법",
+      "내파기법",
+      "인지적 자기지시"
+    ],
+    "a": 3,
+    "h": "속으로 스스로에게 긍정적인 말을 들려주는 내적 대화 훈련입니다.",
+    "e": "마이켄바움의 '인지적 자기지시(Cognitive Self-instruction)'는 내적 혼잣말을 수정하여 어려운 과업을 수행하고 통제력을 회복하도록 돕는 훈련법입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "공포나 불안을 야기하는 자극 중 '가장 두려웠던 극단적인 경우를 머릿속으로 상상하게 하여 실제 상황 직면 시 극복할 수 있도록 원조하는 기법'은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-4, [보충]]",
+    "o": [
+      "홍수기법 (Flooding)",
+      "인지적 자기지시",
+      "인정요법",
+      "내파기법 (Implosion)"
+    ],
+    "a": 3,
+    "h": "머릿속으로 상상하며 공포 자극에 내적으로 직면하는 기법입니다.",
+    "e": "두려운 자극 중 가장 두려운 경우를 '상상'하게 하여 불안 반응을 소거시키는 인지적 심상기법은 '내파기법(Implosion)'입니다. (실제 두려운 현실 상황에 직면시키는 것은 홍수기법)"
+  },
+  {
+    "type": "개념확인",
+    "q": "공포나 불안을 느끼는 클라이언트를 '머릿속 상상이 아니라 실제로 두려움을 느끼는 현실 상황에 직면하게 하여 공포 반응을 소거시키는 기법'은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-4, 강의록 13강, [보충]]",
+    "o": [
+      "내파기법 (Implosion)",
+      "인지적 재구조화",
+      "회상요법",
+      "홍수기법 (Flooding)"
+    ],
+    "a": 3,
+    "h": "실제 공포 상황(예: 높은 곳)에 직접 노출시키는 기법입니다.",
+    "e": "두려움을 유발하는 실제 현실 자극에 직접 직면하게 하여 공포 반응을 소거하는 기법은 '홍수기법(Flooding)'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "노인이 자신의 과거 생애 중 기뻤던 순간과 슬펐던 순간(희로애락)을 곡선 그래프로 표시하여 중요한 생애의 순간들을 시각적으로 돌아볼 수 있도록 돕는 도구는? [교재 13장 13.2절 노인상담의 기술과 과정, 그림 13-1, [보충]]",
+    "o": [
+      "가계도",
+      "생태도",
+      "소시오그램",
+      "생애곡선"
+    ],
+    "a": 3,
+    "h": "인생의 굴곡을 곡선 그래프로 나타내는 회상요법 도구입니다.",
+    "e": "회상요법에서 활용되는 '생애곡선'은 희로애락의 시기를 곡선 그래프로 나타내어 자신의 중요한 생애 전환점을 성찰하도록 돕습니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "치매노인에게 효과적인 개입방법으로 '어떠한 비정상적인 행동이라도 모든 행동에는 나름의 논리와 이유가 있다'고 보며 정당화 요법으로도 불리는 접근법은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장, [보충]]",
+    "o": [
+      "행동수정요법",
+      "전기충격요법",
+      "자극박탈요법",
+      "인정요법 (Validation Therapy)"
+    ],
+    "a": 3,
+    "h": "치매노인의 이상행동 이면에 숨겨진 논리를 인정하고 수용하는 요법입니다.",
+    "e": "나오미 페일(Naomi Feil) 등이 발전시킨 '인정요법(Validation Therapy)'은 치매노인의 비정상적 행동에도 정당한 이유가 있음을 인정하는 기법입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "인정요법(Validation Therapy)에서 활용되는 3대 핵심 기술에 해당하지 않는 것은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장, [보충]]",
+    "o": [
+      "집중 (Centering)",
+      "반복 (Rephrasing)",
+      "모방 (Mirroring)",
+      "격리 (Isolation)"
+    ],
+    "a": 3,
+    "h": "인정요법의 3대 기술은 심호흡의 집중, 말의 반복, 행동의 모방입니다.",
+    "e": "인정요법에서 사용되는 3대 기술은 감정을 다스리는 '집중(centering)', 말과 톤을 따라하는 '반복(rephrasing)', 동작을 따라하는 '모방(mirroring)'입니다. 격리는 해당하지 않습니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "인정요법의 기술 중 '분노나 좌절감을 느끼는 클라이언트가 자신의 감정을 솔직히 인정하고 심호흡에 집중함으로써 감정을 다스릴 수 있도록 돕는 기법'은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장, [보충]]",
+    "o": [
+      "반복 (Rephrasing)",
+      "모방 (Mirroring)",
+      "도전 (Challenge)",
+      "집중 (Centering)"
+    ],
+    "a": 3,
+    "h": "자신의 감정을 인정하고 호흡에 주의를 모으는 기법입니다.",
+    "e": "자신의 내면 감정을 솔직히 인정하고 심호흡에 의식을 집중하여 정서적 안정을 찾는 인정요법 기법은 '집중(Centering)'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "인정요법의 기술 중 '인지기능이 저하된 노인의 목소리 톤과 말의 속도를 동일하게 맞추어 노인의 말을 따라 해줌으로써 심리적 편안함을 주는 기법'은? [교재 13장 13.2절 노인상담의 기술과 과정, [보충]]",
+    "o": [
+      "집중 (Centering)",
+      "모방 (Mirroring)",
+      "훈계 (Admonition)",
+      "반복 (Rephrasing)"
+    ],
+    "a": 3,
+    "h": "말의 속도와 톤을 맞추어 말을 그대로 따라해 주는 기법입니다.",
+    "e": "노인의 말의 속도와 톤을 맞추어 그대로 반복해 줌으로써 노인이 존중받고 있음을 느끼게 하는 기법은 '반복(Rephrasing)'입니다."
+  },
+  {
+    "type": "개념확인",
+    "q": "인정요법의 기술 중 '노인의 신체 동작이나 반복적 행동을 똑같이 따라 함으로써 노인과의 정서적 공감대와 신뢰를 형성하는 기법'은? [교재 13장 13.2절 노인상담의 기술과 과정, [보충]]",
+    "o": [
+      "집중 (Centering)",
+      "반복 (Rephrasing)",
+      "명료화 (Clarification)",
+      "모방 (Mirroring)"
+    ],
+    "a": 3,
+    "h": "거울처럼 상대방의 동작과 제스처를 따라하는 기법입니다.",
+    "e": "노인의 신체 움직임과 자세를 거울처럼 따라 함으로써 유대감과 라포를 형성하는 기법은 '모방(Mirroring)'입니다."
+  },
+  {
+    "type": "법·제도 내용",
+    "q": "존엄치료(Dignity Therapy)의 진행 절차에 대한 설명으로 올바르지 않은 것은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-6, [보충]]",
+    "o": [
+      "환자에게 9가지 질문을 사전에 미리 전달한다.",
+      "질문에 대한 환자의 구술 내용을 녹음하고 상담자가 이를 문서화한다.",
+      "환자가 낭독을 듣고 수정한 뒤 최종 문서를 만들어 환자가 지정한 사람들에게 전달한다.",
+      "작성된 문서는 환자에게 보여주지 않고 즉시 언론에 유료 공개한다."
+    ],
+    "a": 3,
+    "h": "문서 작업 후 환자에게 직접 낭독하고 수정·삭제를 거쳐 환자가 원하는 대상에게만 공개합니다.",
+    "e": "존엄치료 문서는 상담자가 환자에게 직접 낭독하여 수정·삭제를 거친 후 최종 완성하며, 환자가 지정한 사람들에게만 공개됩니다. 언론에 무단 공개한다는 것은 명백한 오답입니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "노인상담 사정단계에서 노인의 '부정적 결함'뿐만 아니라 '강점(strength)'을 반드시 조사하고 지지해야 하는 주된 이유는? [교재 13장 13.2절 노인상담의 기술과 과정, [보충]]",
+    "o": [
+      "상담 비용을 대폭 인상하여 징수하기 위해",
+      "노인을 무조건 장기요양 1등급 시설로 입소시키기 위해",
+      "강점을 파악해야만 법적으로 기초연금을 박탈할 수 있기 때문",
+      "긍정적인 관계를 형성하고, 클라이언트의 자존감을 높여 스스로 문제해결 방법을 찾도록 돕기 위해"
+    ],
+    "a": 3,
+    "h": "강점 관점은 자존감을 향상시키고 긍정적 라포와 자기해결 역량을 강화합니다.",
+    "e": "사정단계에서 강점을 파악하고 지지하는 것은 상담자와의 신뢰관계를 증진하고, 노인의 자존감을 회복시켜 잔존 역량으로 문제를 해결하도록 유도하기 위함입니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "벌링게임(1995)이 제시한 노인상담 개입방법 선택의 5대 지침에 대한 설명으로 올바른 것은? [교재 13장 13.2절 노인상담의 기술과 과정, [보충]]",
+    "o": [
+      "개입은 최대한 공격적이고 과도한 수준에서 신속하게 이루어져야 한다.",
+      "노인이 사용하는 방어기제는 어떤 경우에도 정면에서 격렬히 깨뜨려야 한다.",
+      "노인의 도덕, 종교, 문화적 배경은 무시하고 서구식 모델만 강요해야 한다.",
+      "노인의 능력보다 가족이나 이웃의 기대가 다소 높아야 한다."
+    ],
+    "a": 3,
+    "h": "기대가 너무 낮으면 무기력해지므로 기대치가 다소 높아야 하지만, 개입 자체는 '최소화'해야 합니다.",
+    "e": "벌링게임의 5대 지침은 ① 기대치는 능력보다 다소 높아야 함(너무 낮으면 학습된 무기력 초래), ② 개입은 최소화하고 낮은 수준에서 서서히 진행, ③ 문화·도덕·종교에 기반, ④ 방어기제 적절한 수용, ⑤ 체계적 접근입니다."
+  },
+  {
+    "type": "내용이해",
+    "q": "노인상담 종결단계에서 상호 합의로 종결을 결정했음에도 불구하고 상담자가 클라이언트에게 '추후 회기'를 권유하는 주된 이유는? [교재 13장 13.2절 노인상담의 기술과 과정, [보충]]",
+    "o": [
+      "상담 회기 수를 늘려 기관의 바우처 예산 수입을 챙기기 위해",
+      "클라이언트가 거짓말을 했는지 형사 조사하기 위해",
+      "모든 상담은 법적으로 평생 동안 종결할 수 없도록 규정되어 있기 때문에",
+      "문제해결 후 즉시 관계를 끊으면 클라이언트가 상담자가 차갑고 무관심하다고 느낄 수 있기 때문에"
+    ],
+    "a": 3,
+    "h": "갑작스러운 관계 단절로 인한 버림받음의 감정과 상실감을 예방하기 위함입니다.",
+    "e": "노인 내담자는 종결 시 버림받았다는 두려움이나 상담자의 냉정함을 느낄 수 있으므로, 상호 합의 종결이라도 추후 회기를 권유하여 지지망을 확인시켜 주는 것이 필요합니다."
+        }
+    ];</script>
+
+<!-- ④ 프로그램 본체: 수정하지 마세요. -->
+<script>
+    var allQuestions = [];   // 검사를 통과한 전체 문제
+    var questions = [];      // 지금 풀고 있는 문제 묶음(전체 또는 틀린 문제)
+    var curIdx = 0;
+    var wrongCount = 0;      // 현재 문제에서 틀린 횟수
+    var correctFirst = 0;    // 이번 회차에서 한 번에 맞힌 문제 수
+    var missed = [];         // 이번 회차에서 한 번이라도 틀린 문제
+
+    document.title = '노인복지론 퀴즈 [제' + LECTURE.no + '장]';
+    document.getElementById('lecture-title').textContent = '제' + LECTURE.no + '장: ' + LECTURE.title;
+
+    /* ---------- 데이터 검사 ---------- */
+    function validateQuizData(data) {
+        var errors = [];
+        var warnings = [];
+        var valid = [];
+
+        if (!Array.isArray(data) || data.length === 0) {
+            errors.push({ tag: '전체', text: 'quizData가 비어 있거나 배열([ ])이 아닙니다.' });
+            return { errors: errors, warnings: warnings, valid: valid };
+        }
+
+        data.forEach(function (item, i) {
+            var tag = 'Q' + (i + 1);
+            var problems = [];
+
+            if (!item || typeof item !== 'object') {
+                problems.push('문제가 { } 형식이 아닙니다.');
+            } else {
+                if (typeof item.q !== 'string' || !item.q.trim()) {
+                    problems.push('q(질문)가 없거나 비어 있습니다.');
+                }
+
+                var oOk = Array.isArray(item.o);
+                if (!oOk) {
+                    problems.push('o(보기)가 배열([ ])이 아닙니다.');
+                } else {
+                    if (item.o.length < 2) {
+                        problems.push('보기가 ' + item.o.length + '개뿐입니다. 2개 이상 필요합니다.');
+                    }
+                    var bad = item.o.some(function (x) { return typeof x !== 'string' || !x.trim(); });
+                    if (bad) {
+                        problems.push('보기 중에 비어 있거나 글자가 아닌 항목이 있습니다.');
+                    } else {
+                        var uniq = {};
+                        item.o.forEach(function (x) { uniq[x.trim()] = true; });
+                        if (Object.keys(uniq).length !== item.o.length) {
+                            problems.push('똑같은 보기가 2개 이상 있습니다.');
+                        }
+                    }
+                }
+
+                if (typeof item.a === 'string') {
+                    problems.push('a(정답 번호)가 따옴표로 감싸져 있습니다("' + item.a + '"). 따옴표 없는 숫자로 바꾸세요.');
+                } else if (!Number.isInteger(item.a)) {
+                    problems.push('a(정답 번호)가 없거나 숫자가 아닙니다.');
+                } else if (oOk && (item.a < 0 || item.a >= item.o.length)) {
+                    if (item.a === item.o.length) {
+                        problems.push('a가 ' + item.a + '입니다. 번호는 0부터 세므로 보기가 ' + item.o.length + '개면 0~' + (item.o.length - 1) + ' 중 하나여야 합니다. 1부터 센 것 같아요(' + item.a + ' → ' + (item.a - 1) + ').');
+                    } else {
+                        problems.push('a가 ' + item.a + '로 보기 범위(0~' + (item.o.length - 1) + ')를 벗어났습니다.');
+                    }
+                }
+
+                if (typeof item.h !== 'string' || !item.h.trim()) {
+                    problems.push('h(힌트)가 없거나 비어 있습니다.');
+                }
+                if (typeof item.e !== 'string' || !item.e.trim()) {
+                    problems.push('e(해설)가 없거나 비어 있습니다.');
+                }
+            }
+
+            if (problems.length) {
+                problems.forEach(function (t) { errors.push({ tag: tag, text: t }); });
+            } else {
+                valid.push(item);
+            }
+        });
+
+        
+
+        return { errors: errors, warnings: warnings, valid: valid };
+    }
+
+    /* ---------- 검사 결과 화면 ---------- */
+    function showProblemScreen(opts) {
+        document.getElementById('quiz-screen').style.display = 'none';
+        document.getElementById('problem-screen').style.display = 'block';
+        document.getElementById('problem-title').textContent = opts.title;
+        document.getElementById('problem-summary').textContent = opts.summary;
+
+        var list = document.getElementById('problem-list');
+        list.innerHTML = '';
+        opts.items.forEach(function (it) {
+            var li = document.createElement('li');
+            if (it.warn) li.className = 'warn';
+            var tag = document.createElement('span');
+            tag.className = 'tag';
+            tag.textContent = it.tag;
+            var txt = document.createElement('span');
+            txt.textContent = it.text;
+            li.appendChild(tag);
+            li.appendChild(txt);
+            list.appendChild(li);
+        });
+
+        var tips = document.getElementById('problem-tips');
+        tips.innerHTML = '';
+        if (opts.tips && opts.tips.length) {
+            tips.appendChild(document.createTextNode('자주 생기는 원인'));
+            var ul = document.createElement('ul');
+            opts.tips.forEach(function (t) {
+                var li = document.createElement('li');
+                li.textContent = t;
+                ul.appendChild(li);
+            });
+            tips.appendChild(ul);
+            tips.style.display = 'block';
+        } else {
+            tips.style.display = 'none';
+        }
+
+        var btn = document.getElementById('partial-btn');
+        if (opts.buttonText) {
+            btn.textContent = opts.buttonText;
+            btn.style.display = 'block';
+            btn.onclick = opts.onButton;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    function startQuiz(list) {
+        allQuestions = list;
+        document.getElementById('problem-screen').style.display = 'none';
+        beginRound(list);
+    }
+
+    // 한 회차 시작: 전체 문제 또는 틀린 문제만 받아서 처음부터 진행
+    function beginRound(list) {
+        questions = list;
+        curIdx = 0;
+        correctFirst = 0;
+        missed = [];
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('quiz-screen').style.display = 'block';
+        loadQuestion();
+    }
+
+    function init() {
+        // 데이터 문법 오류: ③ 블록이 아예 실행되지 못한 경우
+        if (typeof quizData === 'undefined') {
+            var items = window.__dataErrors.map(function (er) {
+                return { tag: er.line ? ('약 ' + er.line + '줄') : '오류', text: er.msg };
+            });
+            if (!items.length) items.push({ tag: '오류', text: 'quizData를 찾을 수 없습니다. const quizData = [ ... ]; 형태가 맞는지 확인하세요.' });
+            showProblemScreen({
+                title: '⚠️ 퀴즈 데이터를 읽지 못했어요',
+                summary: '데이터 부분에 문법 오류가 있어서 프로그램이 멈췄습니다. 아래 줄 근처를 확인하세요.',
+                items: items,
+                tips: [
+                    '문장 안에 큰따옴표(")가 들어 있음 → 작은따옴표(\')로 바꾸기',
+                    '문제와 문제 사이 쉼표(,) 빠짐, 또는 맨 끝의 ]; 가 지워짐',
+                    '문장 한가운데에서 줄이 바뀜 (한 문장은 한 줄로)',
+                    '붙여넣은 글에 // 가 포함되어 뒷부분이 주석 처리됨'
+                ]
+            });
+            return;
+        }
+
+        var result = validateQuizData(quizData);
+
+        if (result.errors.length === 0 && result.warnings.length === 0) {
+            startQuiz(result.valid);
+            return;
+        }
+
+        var items = result.errors.map(function (er) { return { tag: er.tag, text: er.text }; })
+            .concat(result.warnings.map(function (w) { return { tag: w.tag, text: w.text, warn: true }; }));
+
+        var badCount = (Array.isArray(quizData) ? quizData.length : 0) - result.valid.length;
+        var hasErrors = result.errors.length > 0;
+
+        showProblemScreen({
+            title: hasErrors ? '⚠️ 고칠 곳이 ' + result.errors.length + '군데 있어요' : '확인해 볼 곳이 있어요',
+            summary: !hasErrors
+                ? '오류는 아니지만 한 번 확인해 보세요.'
+                : (badCount > 0
+                    ? '전체 ' + quizData.length + '문제 중 ' + badCount + '문제에 문제가 있습니다. 데이터를 고치고 새로고침하세요.'
+                    : '퀴즈 데이터를 확인하고 새로고침하세요.'),
+            items: items,
+            tips: hasErrors ? [
+                '정답 번호 a는 따옴표 없는 숫자이고, 첫 번째 보기가 0입니다',
+                '문제마다 type, q, o, a, h, e 가 모두 있어야 합니다'
+            ] : null,
+            buttonText: result.valid.length > 0
+                ? (hasErrors ? '오류 없는 ' + result.valid.length + '문제만 먼저 풀기' : '그대로 시작하기')
+                : null,
+            onButton: function () { startQuiz(result.valid); }
+        });
+    }
+
+    /* ---------- 퀴즈 진행 ---------- */
+    function loadQuestion() {
+        wrongCount = 0;
+        var q = questions[curIdx];
+
+        document.getElementById('progress-text').textContent = (curIdx + 1) + ' / ' + questions.length;
+        updateScore();
+        window.scrollTo(0, 0);
+        document.getElementById('question-type').textContent = q.type || '일반문제';
+        document.getElementById('question-text').textContent = 'Q' + (allQuestions.indexOf(q) + 1) + '. ' + q.q;
+
+        var container = document.getElementById('options-container');
+        container.innerHTML = '';
+        q.o.forEach(function (opt, idx) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'option-btn';
+            btn.textContent = opt;
+            btn.onclick = function () { checkAnswer(idx, btn); };
+            container.appendChild(btn);
+        });
+
+        document.getElementById('hint-box').style.display = 'none';
+        document.getElementById('exp-box').style.display = 'none';
+        document.getElementById('next-btn').style.display = 'none';
+    }
+
+    function checkAnswer(idx, btn) {
+        var q = questions[curIdx];
+        var allBtns = document.querySelectorAll('.option-btn');
+
+        if (idx === q.a) {
+            btn.classList.add('correct');
+            allBtns.forEach(function (b) { b.style.pointerEvents = 'none'; });
+            if (wrongCount === 0) { correctFirst++; updateScore(); }
+            showExplanation();
+        } else {
+            wrongCount++;
+            if (wrongCount === 1) missed.push(q);
+            btn.classList.add('wrong');
+            btn.style.pointerEvents = 'none';
+
+            if (wrongCount === 1) {
+                document.getElementById('hint-text').textContent = q.h;
+                document.getElementById('hint-box').style.display = 'block';
+            } else {
+                allBtns[q.a].classList.add('correct');
+                allBtns.forEach(function (b) { b.style.pointerEvents = 'none'; });
+                showExplanation();
+            }
+        }
+    }
+
+    function showExplanation() {
+        var q = questions[curIdx];
+        document.getElementById('exp-text').textContent = q.e;
+        document.getElementById('exp-box').style.display = 'block';
+        document.getElementById('next-btn').style.display = 'block';
+    }
+
+    // 풀던 중에 누르면 한 번 물어봅니다. (묻지 않으려면 if 문 세 줄을 지우세요)
+    function goList() {
+        if (curIdx > 0 && !confirm('퀴즈를 그만하고 목록으로 갈까요?\n지금까지 푼 기록은 저장되지 않아요.')) return;
+        location.href = 'index.html';
+    }
+
+    function nextQuestion() {
+        curIdx++;
+        if (curIdx < questions.length) {
+            loadQuestion();
+        } else {
+            showResult();
+        }
+    }
+
+    /* ---------- 점수와 다시 풀기 ---------- */
+    // 한 번에 맞힌 문제만 점수로 셉니다. (힌트를 본 뒤 맞히면 점수에 넣지 않아요)
+    function updateScore() {
+        document.getElementById('score-text').textContent = '한 번에 맞힌 문제 ' + correctFirst + '개';
+    }
+
+    function showResult() {
+        var total = questions.length;
+        var score = Math.round(correctFirst / total * 100);
+        var isRetry = total < allQuestions.length;
+
+        document.getElementById('quiz-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+
+        document.getElementById('result-title').textContent = isRetry ? '🔁 틀린 문제 복습을 마쳤습니다!' : '🎊 학습을 마쳤습니다!';
+        document.getElementById('result-score').textContent = score + '점';
+        document.getElementById('result-detail').textContent =
+            (isRetry ? '복습한 ' : '전체 ') + total + '문제 중 한 번에 맞힌 문제 ' + correctFirst + '개 (100점 만점)';
+
+        var msg;
+        if (score >= 90) msg = '진짜 수고 많이 하셨습니다, 학우님! A+ 당근 🥕';
+        else if (score >= 70) msg = '잘하고 계세요! 틀린 문제만 한 번 더 풀면 더 단단해져요.';
+        else msg = '괜찮아요. 틀린 문제를 해설과 함께 다시 풀어 보면 금방 늘어요.';
+        document.getElementById('result-msg').textContent = msg;
+
+        var details = document.getElementById('missed-details');
+        var list = document.getElementById('missed-list');
+        list.innerHTML = '';
+        missed.forEach(function (m) {
+            var li = document.createElement('li');
+            li.value = allQuestions.indexOf(m) + 1;
+            li.textContent = m.q;
+            list.appendChild(li);
+        });
+        details.open = false;
+        details.style.display = missed.length ? 'block' : 'none';
+        document.getElementById('missed-summary').textContent = '이번에 틀린 문제 ' + missed.length + '개 보기';
+
+        var retryBtn = document.getElementById('retry-missed-btn');
+        retryBtn.textContent = '❌ 틀린 문제만 다시 풀기 (' + missed.length + '문제)';
+        retryBtn.style.display = missed.length ? 'block' : 'none';
+
+        window.scrollTo(0, 0);
+    }
+
+    function retryAll() { beginRound(allQuestions); }
+    function retryMissed() { if (missed.length) beginRound(missed.slice()); }
+
+    init();
+</script>
+</body>
+</html>

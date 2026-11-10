@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>노인복지론 플래시카드</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* 눈이 편한 차분한 초록 계열 (index.html의 플래시카드 색과 맞춤) */
+    body {
+        font-family: 'Pretendard', sans-serif;
+        background: linear-gradient(135deg, #2f7d5b 0%, #1b4332 100%);
+        background-attachment: fixed;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .container { width: 100%; max-width: 850px; margin: auto; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+    .header { text-align: center; color: white; margin-bottom: 20px; }
+    .header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 6px; }
+    .header .sub { font-size: 1.05rem; font-weight: 600; opacity: 0.92; margin-bottom: 10px; word-break: keep-all; }
+    .header .count { font-size: 1.1rem; font-weight: 700; }
+    .progress { max-width: 340px; height: 6px; margin: 12px auto 0; background: rgba(255,255,255,0.25); border-radius: 3px; overflow: hidden; }
+    #bar { height: 100%; width: 0; background: white; border-radius: 3px; transition: width 0.3s; }
+
+    /* 카드 */
+    .stage { perspective: 1400px; margin: 12px 0; }
+    .card {
+        position: relative;
+        width: 100%;
+        height: min(460px, 60vh);
+        height: min(460px, 60dvh);
+        min-height: 320px;
+        cursor: pointer;
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .card.flipped { transform: rotateY(180deg); }
+    .card:focus-visible { outline: 3px solid #fde68a; outline-offset: 4px; }
+
+    .side {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 20px 26px 18px;
+        border-radius: 20px;
+        overflow-y: auto;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        word-break: keep-all;
+        white-space: pre-line;
+    }
+    .front { background: white; color: #1e293b; }
+    .back { background: #f0f7f2; color: #1b4332; transform: rotateY(180deg); }
+
+    .meta { display: flex; align-items: center; justify-content: space-between; min-height: 28px; white-space: normal; }
+    .chip { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; }
+    .chip-q { background: #f1f5f9; color: #475569; }
+    .chip-a { background: #cfe8d8; color: #1b4332; }
+    .stars { font-size: 0.95rem; font-weight: 800; color: #1f6b46; background: #e3f1e8; padding: 3px 10px; border-radius: 20px; display: none; }
+
+    /* 내용이 길어도 위쪽이 잘리지 않도록 margin:auto로 가운데 맞춤 */
+    .body { margin: auto; padding: 14px 0; text-align: center; font-size: 1.4rem; font-weight: 700; line-height: 1.55; }
+    .back .body { font-size: 1.55rem; font-weight: 800; }
+    .src { min-height: 1.2em; text-align: center; font-size: 0.85rem; color: #64748b; white-space: normal; }
+
+    .tip { text-align: center; color: rgba(255,255,255,0.85); font-size: 0.9rem; margin: 4px 0 14px; word-break: keep-all; }
+
+    .controls { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 12px; }
+    .btn { padding: 18px 10px; border: none; border-radius: 12px; background: white; color: #1f6b46; font-family: inherit; font-size: 1.05rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .btn:hover { background: #f1f5f9; transform: translateY(-2px); }
+    .btn:focus-visible { outline: 3px solid #fde68a; outline-offset: 2px; }
+
+    /* 데이터 검사 결과 화면 */
+    .problem-card { display: none; background: white; border-radius: 15px; padding: 28px; border-left: 6px solid #dc3545; box-shadow: 0 10px 30px rgba(0,0,0,0.25); color: #1e293b; }
+    .problem-card h2 { margin: 0 0 8px; font-size: 1.3rem; }
+    .problem-card .summary { margin: 0 0 16px; color: #55657d; line-height: 1.6; word-break: keep-all; }
+    .problem-list { list-style: none; margin: 0 0 8px; padding: 0; }
+    .problem-list li { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid #e0e7f1; line-height: 1.5; word-break: keep-all; }
+    .problem-list .tag { flex: none; min-width: 3.2rem; font-weight: 800; color: #dc3545; }
+    .problem-card .tips { margin: 12px 0 0; padding: 14px; background: #f3f6fa; border-radius: 10px; font-size: 0.92rem; line-height: 1.6; color: #2f3640; word-break: keep-all; }
+    .problem-card .tips ul { margin: 6px 0 0; padding-left: 20px; }
+    #partial-btn { width: 100%; padding: 16px; margin-top: 16px; border: none; border-radius: 10px; background: #2e7d5b; color: white; font-weight: bold; font-size: 1.05rem; cursor: pointer; font-family: inherit; }
+    #partial-btn:focus-visible { outline: 3px solid #1e293b; outline-offset: 2px; }
+
+    @media (max-width: 600px) {
+        body { padding: 14px; }
+        .header h1 { font-size: 1.6rem; }
+        .side { padding: 16px 18px 14px; }
+        .body { font-size: 1.2rem; }
+        .back .body { font-size: 1.3rem; }
+        .controls { grid-template-columns: 1fr 1fr; }
+        .controls .btn-list { grid-column: 1 / -1; }
+        .btn { padding: 16px 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .card, #bar, .btn { transition: none; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <div id="problem-screen" class="problem-card" role="alert">
+        <h2 id="problem-title"></h2>
+        <p id="problem-summary" class="summary"></p>
+        <ul id="problem-list" class="problem-list"></ul>
+        <div id="problem-tips" class="tips"></div>
+        <button id="partial-btn" type="button"></button>
+    </div>
+
+    <div id="card-screen">
+        <div class="header">
+            <h1 id="page-title">플래시카드</h1>
+            <p class="sub" id="page-sub"></p>
+            <p class="count"><span id="current">1</span> / <span id="total">0</span></p>
+            <div class="progress"><div id="bar"></div></div>
+        </div>
+
+        <div class="stage">
+            <div class="card" id="flashcard" role="button" tabindex="0" aria-label="카드 뒤집기">
+                <div class="side front">
+                    <div class="meta"><span class="chip chip-q">질문</span><span class="stars" id="stars"></span></div>
+                    <div class="body" id="question"></div>
+                    <div class="src" id="source"></div>
+                </div>
+                <div class="side back">
+                    <div class="meta"><span class="chip chip-a">정답</span></div>
+                    <div class="body" id="answer"></div>
+                    <div class="src"></div>
+                </div>
+            </div>
+        </div>
+
+        <p class="tip">카드를 누르면 정답이 보여요. 화살표 키나 좌우로 밀어서 넘길 수 있어요.</p>
+
+        <div class="controls">
+            <button class="btn" type="button" onclick="prevCard()">이전</button>
+            <button class="btn" type="button" onclick="nextCard()">다음</button>
+            <button class="btn btn-list" type="button" onclick="location.href='index.html'">목록으로 돌아가기</button>
+        </div>
+    </div>
+</div>
+
+<!-- ① 오류 수집용: 반드시 맨 위(②, ③보다 앞)에 두세요. 수정하지 마세요. -->
+<script>
+    window.__dataErrors = [];
+    window.addEventListener('error', function (e) {
+        window.__dataErrors.push({ msg: e.message, line: e.lineno });
+    });
+</script>
+
+<!-- ② 장 설정: 새 장을 만들 때 번호(1~15)와 제목만 고치세요. -->
+<script>
+    const LECTURE = { no: 13, title: "노인상담" };
+</script>
+
+<!-- ③ 카드 데이터: 노트북LM이 만든 const cards = [...]; 를 통째로 덮어쓰세요.
+     아래 2장은 화면 확인용 예시입니다. 덮어쓸 때 이 예시도 같이 지우세요.
+     카드마다 q(질문)와 a(정답)가 모두 있어야 합니다. -->
+<script>
+    const cards = [
+        {"q": "★★★ 도움을 필요로 하는 노인이 전문가와 원조관계를 형성하여 은퇴, 가족, 경제, 건강 문제를 해결하고 인간적 성장을 도모하는 과정은? [교재 13장 13.1절 노인상담의 이해, 워크북 13장, 기말 연습문제정리 13강]",
+    "a": "노인상담"
+  },
+  {
+    "q": "★★★ 벌링게임(1995)이 제시한 노인상담과 일반상담의 3대 핵심 차이는? [교재 13장 13.1절 노인상담의 이해, 2019년 기출]",
+    "a": "실생활 적용, 체면 존중, 종결과정 집중"
+  },
+  {
+    "q": "★★★ 노인상담에서 상담자가 1분 이야기하고, 2분 동안 경청하며, 3분 동안 의미와 대응을 깊이 생각해야 한다는 경청의 원칙은? [교재 13장 13.2절 노인상담의 기술과 과정, 2015년 기출]",
+    "a": "경청의 1·2·3 원칙"
+  },
+  {
+    "q": "★★★ 노인의 인생 전반에 대한 회고를 통해 과거를 돌아보고 생을 정리하며 우울감을 줄이고 자아통합을 돕는 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장, 기말 연습문제정리 13강]",
+    "a": "회상요법 (Reminiscence Therapy)"
+  },
+  {
+    "q": "★★★ 회상요법에서 희로애락의 시기를 곡선 그래프로 표시하여 중요한 생애의 순간들을 시각적으로 돌아보게 돕는 도구는? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장]",
+    "a": "생애곡선"
+  },
+  {
+    "q": "★★★ 치매노인의 어떠한 비정상적인 행동이라도 나름의 논리와 이유가 있다고 보며 정당화 요법으로도 불리는 치료법은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장, 기말 연습문제정리 13강]",
+    "a": "인정요법 (Validation Therapy)"
+  },
+  {
+    "q": "★★★ 인정요법(Validation Therapy)에서 활용되는 3대 핵심 기술은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장]",
+    "a": "집중(centering), 반복(rephrasing), 모방(mirroring)"
+  },
+  {
+    "q": "★★★ 캐나다 초치노프 박사가 개발하여 아홉 가지 질문을 통해 남겨진 이들에게 의사를 전달하고 존엄을 유지하도록 돕는 치료법은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장, 기말 연습문제정리 13강]",
+    "a": "존엄치료 (Dignity Therapy)"
+  },
+  {
+    "q": "★★★ 바이스텍(Biestek)의 원칙을 적용한 노인상담의 8대 원칙은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장, 정리하기+강의연습문제 13강]",
+    "a": "개별화, 의도적 감정표현, 통제된 정서적 관여, 수용, 비심판적 태도, 자기결정, 비밀보장, 죽음에 대한 대비"
+  },
+  {
+    "q": "★★★ 노인상담 원칙 중 노인이 가진 다양한 모습을 편견 없이 있는 그대로 받아들이고 존중하는 원칙은? [교재 13장 13.2절 노인상담의 기술과 과정, 2019년 기출]",
+    "a": "수용의 원칙"
+  },
+  {
+    "q": "★★★ 노인상담 원칙 중 노인이 가족이나 사회관계에서 느끼는 부정적 감정을 표출하도록 돕고 긍정적으로 전환시키는 원칙은? [교재 13장 13.2절 노인상담의 기술과 과정, 2019년 기출]",
+    "a": "의도적 감정표현의 원칙"
+  },
+  {
+    "q": "★★★ 노인상담 원칙 중 상담자가 자신의 감정을 전문적으로 조절하면서 노인의 감정에 공감하고 수용하는 원칙은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장, 기말 연습문제정리 13강]",
+    "a": "통제된 정서적 관여"
+  },
+  {
+    "q": "★★★ 노인상담의 진행 과정을 순서대로 3단계로 구분하면? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장, 기말 연습문제정리 13강]",
+    "a": "사정단계 → 개입단계 → 종결단계"
+  },
+  {
+    "q": "★★★ 노인상담 사정단계에서 계획을 세울 때 노인의 부정적 문제뿐만 아니라 균형 있게 반드시 파악해야 하는 요소는? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장]",
+    "a": "노인의 강점(strength)과 자원"
+  },
+  {
+    "q": "★★★ 벌링게임이 제시한 개입 지침 중 기대 수준과 개입 강도의 원칙은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장]",
+    "a": "기대는 능력보다 다소 높아야 하고, 개입은 최소화하여 낮은 수준에서 서서히 이루어져야 함"
+  },
+  {
+    "q": "★★★ 노인상담이 그동안 타 상담에 비해 중요성을 인정받지 못한 3대 이유는? [교재 13장 13.1절 노인상담의 이해, 워크북 13장, 기말 연습문제정리 13강]",
+    "a": "문제를 비생산적 인구의 이차적 문제로 인식함, 감정과 욕구 표현을 꺼림, 치료와 해결이 어렵다는 편견"
+  },
+  {
+    "q": "★★★ 클라이언트가 한 말의 요점을 다른 단어로 재구성하여 요점을 명확히 정리해 주는 언어적 경청 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 2014년 기출]",
+    "a": "요약반복법 (언어의 재구성)"
+  },
+  {
+    "q": "★★☆ 노인상담에서 클라이언트의 높은 연령과 풍부한 인생경험이 상담자에게 미칠 수 있는 영향은? [교재 13장 13.1절 노인상담의 이해, 기말 연습문제정리 13강, 2019년 기출]",
+    "a": "라포(신뢰) 형성에 어려움을 줄 수 있고, 상담자에게 긴장과 부담을 유발할 수 있음"
+  },
+  {
+    "q": "★★☆ 갈랜드의 집단상담 4가지 유형은? [교재 13장 13.1절 노인상담의 이해, 워크북 13장]",
+    "a": "회복집단, 지지와 안정화 집단, 성장 및 교육 집단, 과제 및 활동 집단"
+  },
+  {
+    "q": "★★☆ 갈랜드 집단상담 중 전통적 정신분석에 근거하여 통찰과 성격 변화에 초점을 두는 집단은? [교재 13장 13.1절 노인상담의 이해, 워크북 13장]",
+    "a": "회복집단"
+  },
+  {
+    "q": "★★☆ 갈랜드 집단상담 중 이혼, 사별, 경제적 위기 시 자아 및 적응능력 회복에 초점을 두는 집단은? [교재 13장 13.1절 노인상담의 이해, 워크북 13장]",
+    "a": "지지와 안정화 집단"
+  },
+  {
+    "q": "★★☆ 갈랜드 집단상담 중 생활에 필요한 새로운 역할과 기능(예: 요리, 디지털 기기)을 훈련하는 집단은? [교재 13장 13.1절 노인상담의 이해, 강의록 13강]",
+    "a": "성장 및 교육 집단"
+  },
+  {
+    "q": "★★☆ 클라이언트의 비언어적 표현에 대해 '제가 보기에는...', '제가 듣기에는...'과 같이 의미를 확인하는 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-2, 기말 연습문제정리 13강]",
+    "a": "비언어적 단서 탐색"
+  },
+  {
+    "q": "★★☆ 노인의 감정에 대해 '그렇게 느끼시는 것은 아주 정상적인 것입니다'라고 수용과 격려를 보여주는 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-2]",
+    "a": "감정의 성찰적 반응"
+  },
+  {
+    "q": "★★☆ 노인의 말과 행동 사이의 모순이나 불일치를 직접 지적하여 현실과 감정을 직면시키는 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-2]",
+    "a": "도전 (Challenge)"
+  },
+  {
+    "q": "★★☆ 상담자 자신의 관찰이나 경험을 간결하게 이야기하여 친밀감과 신뢰를 형성하는 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-2]",
+    "a": "자기노출 (Self-disclosure)"
+  },
+  {
+    "q": "★★☆ 해결중심 단기치료 질문 중 '기적이 일어나 문제가 해결되었다면 무엇이 달라지겠습니까?'라고 묻는 질문은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-3]",
+    "a": "기적질문 (Miracle Question)"
+  },
+  {
+    "q": "★★☆ 해결중심 단기치료 질문 중 고통스러운 상황 속에서도 살아남기 위해 해온 노력과 대처 방식을 묻는 질문은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-3]",
+    "a": "대처질문 (Coping Question)"
+  },
+  {
+    "q": "★★☆ 마호니(Mahoney)가 개발한 기법으로, 비합리적 사고과정을 논리적이고 합리적인 사고로 대치시키는 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-4]",
+    "a": "인지적 재구조화 (Cognitive Restructuring)"
+  },
+  {
+    "q": "★★☆ 마이켄바움(Meichenbaum)이 개발한 기법으로, 긍정적인 내적 대화와 자기진술을 반복하게 하여 자기패배적 사고를 극복하게 하는 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-4]",
+    "a": "인지적 자기지시 (Cognitive Self-instruction)"
+  },
+  {
+    "q": "★★☆ 인지적 심상기법 중 가장 두려운 자극을 머릿속으로 '상상'하게 하여 공포를 소거하는 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-4]",
+    "a": "내파기법 (Implosion)"
+  },
+  {
+    "q": "★★☆ 인지적 심상기법 중 상상이 아니라 실제로 두려움을 느끼는 현실 상황에 직접 직면하게 하는 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-4, 강의록 13강]",
+    "a": "홍수기법 (Flooding)"
+  },
+  {
+    "q": "★★☆ 인정요법 기술 중 분노나 좌절 시 자신의 감정을 솔직히 인정하고 심호흡에 집중하는 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장]",
+    "a": "집중 (Centering)"
+  },
+  {
+    "q": "★★☆ 인정요법 기술 중 인지기능이 저하된 노인의 목소리 톤과 말의 속도를 맞춰 따라 해주는 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장]",
+    "a": "반복 (Rephrasing)"
+  },
+  {
+    "q": "★☆☆ 인정요법 기술 중 노인의 신체 동작이나 반복적 행동을 똑같이 따라 함으로써 신뢰를 형성하는 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장]",
+    "a": "모방 (Mirroring)"
+  },
+  {
+    "q": "★☆☆ 노인상담 원칙 중 노인을 나이나 질환으로 일반화하지 않고 고유한 역사와 개성을 가진 독립적 존재로 대하는 원칙은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장]",
+    "a": "개별화의 원칙"
+  },
+  {
+    "q": "★☆☆ 노인상담 원칙 중 상담자가 즉각적인 판단이나 도덕적 비판을 피하고 공동으로 문제해결을 모색하는 원칙은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장]",
+    "a": "비심판적 태도의 원칙"
+  },
+  {
+    "q": "★☆☆ 노인상담 원칙 중 여생에 대한 심리적 준비와 죽음 불안을 다루어 자아통합을 돕는 고유 원칙은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장]",
+    "a": "죽음에 대한 대비의 원칙"
+  },
+  {
+    "q": "★☆☆ 치매노인과 대화할 때 문맥에 맞지 않거나 엉뚱한 말을 하더라도 상담자가 취해야 할 올바른 태도는? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장]",
+    "a": "지적하거나 조롱하지 않고 그 말을 인정하며 존중하고 경청하는 태도"
+  },
+  {
+    "q": "★☆☆ 해결중심 단기치료 질문 중 구체적 사실을 물어 특정 사항에 집중하게 하는 질문은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-3]",
+    "a": "초점질문"
+  },
+  {
+    "q": "★☆☆ 해결중심 단기치료 질문 중 주변 사람과의 상호 연관성과 순환적 인과관계를 조망하게 하는 질문은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-3]",
+    "a": "순환질문 (Circular Question)"
+  },
+  {
+    "q": "★☆☆ 경청 기술 중 노인의 모호한 말에 대해 좀 더 명확히 설명해 달라고 요청하여 의미를 분명히 하는 기법은? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-2]",
+    "a": "명료화 (Clarification)"
+  },
+  {
+    "q": "★☆☆ 존엄치료에서 환자의 구술 녹음 내용을 문서화한 후 최종 확정하기 위해 환자와 함께 거치는 절차는? [교재 13장 13.2절 노인상담의 기술과 과정, 표 13-6]",
+    "a": "상담자가 문서를 낭독하고 환자의 수정·삭제 의견을 반영함"
+  },
+  {
+    "q": "★☆☆ 노인상담 종결 시 상호 합의로 종결을 결정했더라도 상담자가 클라이언트에게 권유해야 하는 것은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장]",
+    "a": "추후 회기 권유 (단절감과 버려짐에 대한 두려움 완화)"
+  },
+  {
+    "q": "★☆☆ 노인상담 종결 후 클라이언트의 적응 상태를 파악하기 위해 지속적으로 접촉하고 안부를 확인하는 과정은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장]",
+    "a": "추후 지도 (Follow-up)"
+  },
+  {
+    "q": "★☆☆ 노인상담 사정단계에서 노인의 세 가지 기능적 차원을 평가할 때 포함되는 영역은? [교재 13장 13.2절 노인상담의 기술과 과정, 워크북 13장]",
+    "a": "신체적 기능, 심리적 기능, 사회적 기능"
+  },
+  {
+    "q": "★☆☆ 노인상담의 영역 중 배우자 상실, 고독, 세대갈등, 성격특성 변화 등을 다루는 상담 영역은? [교재 13장 13.3절 노인상담서비스 활성화 과제, 표 13-7]",
+    "a": "정서적 영역 (고독)"
+  },
+  {
+    "q": "★☆☆ 노인상담의 영역 중 종교활동, 친구·이웃관계, 은퇴 후 사회적 관계 유지 등을 다루는 상담 영역은? [교재 13장 13.3절 노인상담서비스 활성화 과제, 표 13-7]",
+    "a": "사회참여 영역 (소외와 무위)"
+  },
+  {
+    "q": "★☆☆ 향후 우리나라 노인상담서비스 활성화를 위해 기존의 경제적 지원 중심을 넘어 확장되어야 할 상담 영역은? [교재 13장 13.3절 노인상담서비스 활성화 과제, 워크북 13장]",
+    "a": "정서적 영역 및 사회참여 영역"
+  },
+  {
+    "q": "★☆☆ 노인상담의 활성화를 가로막는 주요 요인으로 노인이 상담 이용 시 느끼는 심리적 장벽은? [교재 13장 13.3절 노인상담서비스 활성화 과제, 워크북 13장]",
+    "a": "상담서비스에 대한 낙인감(Stigma)과 비용 부담"}
+    ];</script>
+
+<!-- ④ 프로그램 본체: 수정하지 마세요. -->
+<script>
+    var deck = [];
+    var cur = 0;
+    var swapTimer = null;
+
+    document.title = '제' + LECTURE.no + '장 - ' + LECTURE.title;
+    document.getElementById('page-title').textContent = '제' + LECTURE.no + '장 플래시카드';
+    document.getElementById('page-sub').textContent = LECTURE.title;
+
+    var cardEl = document.getElementById('flashcard');
+
+    function reduceMotion() {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+
+    /* ---------- 데이터 검사 ---------- */
+    function validateCards(data) {
+        var errors = [];
+        var valid = [];
+
+        if (!Array.isArray(data) || data.length === 0) {
+            errors.push({ tag: '전체', text: 'cards가 비어 있거나 배열([ ])이 아닙니다.' });
+            return { errors: errors, valid: valid };
+        }
+
+        data.forEach(function (item, i) {
+            var tag = (i + 1) + '번 카드';
+            var problems = [];
+            if (!item || typeof item !== 'object') {
+                problems.push('카드가 { } 형식이 아닙니다.');
+            } else {
+                if (typeof item.q !== 'string' || !item.q.trim()) problems.push('q(질문)가 없거나 비어 있습니다.');
+                if (typeof item.a !== 'string' || !item.a.trim()) problems.push('a(정답)가 없거나 비어 있습니다.');
+            }
+            if (problems.length) {
+                problems.forEach(function (t) { errors.push({ tag: tag, text: t }); });
+            } else {
+                valid.push(item);
+            }
+        });
+
+        return { errors: errors, valid: valid };
+    }
+
+    function showProblemScreen(opts) {
+        document.getElementById('card-screen').style.display = 'none';
+        document.getElementById('problem-screen').style.display = 'block';
+        document.getElementById('problem-title').textContent = opts.title;
+        document.getElementById('problem-summary').textContent = opts.summary;
+
+        var list = document.getElementById('problem-list');
+        list.innerHTML = '';
+        opts.items.forEach(function (it) {
+            var li = document.createElement('li');
+            var tag = document.createElement('span');
+            tag.className = 'tag';
+            tag.textContent = it.tag;
+            var txt = document.createElement('span');
+            txt.textContent = it.text;
+            li.appendChild(tag);
+            li.appendChild(txt);
+            list.appendChild(li);
+        });
+
+        var tips = document.getElementById('problem-tips');
+        tips.innerHTML = '';
+        if (opts.tips && opts.tips.length) {
+            tips.appendChild(document.createTextNode('자주 생기는 원인'));
+            var ul = document.createElement('ul');
+            opts.tips.forEach(function (t) {
+                var li = document.createElement('li');
+                li.textContent = t;
+                ul.appendChild(li);
+            });
+            tips.appendChild(ul);
+            tips.style.display = 'block';
+        } else {
+            tips.style.display = 'none';
+        }
+
+        var btn = document.getElementById('partial-btn');
+        if (opts.buttonText) {
+            btn.textContent = opts.buttonText;
+            btn.style.display = 'block';
+            btn.onclick = opts.onButton;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    function startDeck(list) {
+        deck = list;
+        cur = 0;
+        document.getElementById('problem-screen').style.display = 'none';
+        document.getElementById('card-screen').style.display = 'block';
+        render();
+    }
+
+    function init() {
+        // 데이터 문법 오류: ③ 블록이 아예 실행되지 못한 경우
+        if (typeof cards === 'undefined') {
+            var items = window.__dataErrors.map(function (er) {
+                return { tag: er.line ? ('약 ' + er.line + '줄') : '오류', text: er.msg };
+            });
+            if (!items.length) items.push({ tag: '오류', text: 'cards를 찾을 수 없습니다. const cards = [ ... ]; 형태가 맞는지 확인하세요.' });
+            showProblemScreen({
+                title: '⚠️ 카드 데이터를 읽지 못했어요',
+                summary: '데이터 부분에 문법 오류가 있어서 프로그램이 멈췄습니다. 아래 줄 근처를 확인하세요.',
+                items: items,
+                tips: [
+                    '문장 안에 큰따옴표(")가 들어 있음 → 작은따옴표(\')로 바꾸기',
+                    '카드와 카드 사이 쉼표(,) 빠짐, 또는 맨 끝의 ]; 가 지워짐',
+                    '문장 한가운데에서 줄이 바뀜 (한 문장은 한 줄로)',
+                    '붙여넣은 글에 // 가 포함되어 뒷부분이 주석 처리됨'
+                ]
+            });
+            return;
+        }
+
+        var result = validateCards(cards);
+
+        if (result.errors.length === 0) {
+            startDeck(result.valid);
+            return;
+        }
+
+        var total = Array.isArray(cards) ? cards.length : 0;
+        var badCount = total - result.valid.length;
+        showProblemScreen({
+            title: '⚠️ 고칠 곳이 ' + result.errors.length + '군데 있어요',
+            summary: badCount > 0
+                ? '전체 ' + total + '장 중 ' + badCount + '장에 문제가 있습니다. 데이터를 고치고 새로고침하세요.'
+                : '카드 데이터를 확인하고 새로고침하세요.',
+            items: result.errors,
+            tips: ['카드마다 q(질문)와 a(정답)가 모두 있어야 하고, 둘 다 글자(따옴표로 감싼 문장)여야 합니다'],
+            buttonText: result.valid.length > 0 ? '오류 없는 ' + result.valid.length + '장만 먼저 보기' : null,
+            onButton: function () { startDeck(result.valid); }
+        });
+    }
+
+    /* ---------- 카드 표시 ---------- */
+    // 질문 앞의 ★(중요도)와 끝의 [출처]를 따로 떼어 작은 표식으로 보여줍니다.
+    function parseQuestion(raw) {
+        var text = raw.trim();
+        var stars = '';
+        var src = '';
+        var m = text.match(/^([★☆]{1,5})\s*/);
+        if (m) { stars = m[1]; text = text.slice(m[0].length); }
+        var s = text.match(/\s*\[([^\]]{1,120})\]\s*$/);
+        if (s) { src = s[1]; text = text.slice(0, s.index); }
+        if (!text.trim()) { text = raw.trim(); stars = ''; src = ''; }
+        return { stars: stars, src: src, text: text };
+    }
+
+    function render() {
+        var c = deck[cur];
+        var p = parseQuestion(c.q);
+
+        document.getElementById('question').textContent = p.text;
+        document.getElementById('answer').textContent = c.a.trim();
+        document.getElementById('source').textContent = p.src ? '출처: ' + p.src : '';
+
+        var starsEl = document.getElementById('stars');
+        if (p.stars) {
+            var filled = (p.stars.match(/★/g) || []).length;
+            starsEl.textContent = p.stars;
+            starsEl.setAttribute('aria-label', '중요도 ' + p.stars.length + '개 중 ' + filled + '개');
+            starsEl.style.display = 'inline-block';
+        } else {
+            starsEl.style.display = 'none';
+        }
+
+        document.getElementById('current').textContent = cur + 1;
+        document.getElementById('total').textContent = deck.length;
+        document.getElementById('bar').style.width = ((cur + 1) / deck.length * 100) + '%';
+    }
+
+    function flip() { cardEl.classList.toggle('flipped'); }
+
+    function go(delta) {
+        cur = (cur + delta + deck.length) % deck.length;
+        clearTimeout(swapTimer);
+        if (cardEl.classList.contains('flipped') && !reduceMotion()) {
+            // 먼저 카드를 앞면으로 돌리고, 옆면이 되어 안 보일 때 내용을 바꿔서 다음 정답이 미리 비치지 않게 함
+            cardEl.classList.remove('flipped');
+            swapTimer = setTimeout(render, 300);
+        } else {
+            cardEl.classList.remove('flipped');
+            render();
+        }
+    }
+    function nextCard() { go(1); }
+    function prevCard() { go(-1); }
+
+    cardEl.addEventListener('click', flip);
+
+    document.addEventListener('keydown', function (e) {
+        if (document.getElementById('card-screen').style.display === 'none') return;
+        if (e.key === 'ArrowRight') { nextCard(); }
+        else if (e.key === 'ArrowLeft') { prevCard(); }
+        else if ((e.key === ' ' || e.key === 'Enter') && e.target.tagName !== 'BUTTON') { e.preventDefault(); flip(); }
+    });
+
+    // 스마트폰: 좌우로 밀어서 넘기기
+    var touchX = null, touchY = null;
+    cardEl.addEventListener('touchstart', function (e) {
+        touchX = e.touches[0].clientX;
+        touchY = e.touches[0].clientY;
+    }, { passive: true });
+    cardEl.addEventListener('touchend', function (e) {
+        if (touchX === null) return;
+        var dx = e.changedTouches[0].clientX - touchX;
+        var dy = e.changedTouches[0].clientY - touchY;
+        touchX = null;
+        if (Math.abs(dx) > 60 && Math.abs(dy) < 50) {
+            if (dx < 0) nextCard(); else prevCard();
+        }
+    }, { passive: true });
+
+    init();
+</script>
+</body>
+</html>

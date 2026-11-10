@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>노인복지론 플래시카드</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* 눈이 편한 차분한 초록 계열 (index.html의 플래시카드 색과 맞춤) */
+    body {
+        font-family: 'Pretendard', sans-serif;
+        background: linear-gradient(135deg, #2f7d5b 0%, #1b4332 100%);
+        background-attachment: fixed;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .container { width: 100%; max-width: 850px; margin: auto; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+    .header { text-align: center; color: white; margin-bottom: 20px; }
+    .header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 6px; }
+    .header .sub { font-size: 1.05rem; font-weight: 600; opacity: 0.92; margin-bottom: 10px; word-break: keep-all; }
+    .header .count { font-size: 1.1rem; font-weight: 700; }
+    .progress { max-width: 340px; height: 6px; margin: 12px auto 0; background: rgba(255,255,255,0.25); border-radius: 3px; overflow: hidden; }
+    #bar { height: 100%; width: 0; background: white; border-radius: 3px; transition: width 0.3s; }
+
+    /* 카드 */
+    .stage { perspective: 1400px; margin: 12px 0; }
+    .card {
+        position: relative;
+        width: 100%;
+        height: min(460px, 60vh);
+        height: min(460px, 60dvh);
+        min-height: 320px;
+        cursor: pointer;
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .card.flipped { transform: rotateY(180deg); }
+    .card:focus-visible { outline: 3px solid #fde68a; outline-offset: 4px; }
+
+    .side {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 20px 26px 18px;
+        border-radius: 20px;
+        overflow-y: auto;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        word-break: keep-all;
+        white-space: pre-line;
+    }
+    .front { background: white; color: #1e293b; }
+    .back { background: #f0f7f2; color: #1b4332; transform: rotateY(180deg); }
+
+    .meta { display: flex; align-items: center; justify-content: space-between; min-height: 28px; white-space: normal; }
+    .chip { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; }
+    .chip-q { background: #f1f5f9; color: #475569; }
+    .chip-a { background: #cfe8d8; color: #1b4332; }
+    .stars { font-size: 0.95rem; font-weight: 800; color: #1f6b46; background: #e3f1e8; padding: 3px 10px; border-radius: 20px; display: none; }
+
+    /* 내용이 길어도 위쪽이 잘리지 않도록 margin:auto로 가운데 맞춤 */
+    .body { margin: auto; padding: 14px 0; text-align: center; font-size: 1.4rem; font-weight: 700; line-height: 1.55; }
+    .back .body { font-size: 1.55rem; font-weight: 800; }
+    .src { min-height: 1.2em; text-align: center; font-size: 0.85rem; color: #64748b; white-space: normal; }
+
+    .tip { text-align: center; color: rgba(255,255,255,0.85); font-size: 0.9rem; margin: 4px 0 14px; word-break: keep-all; }
+
+    .controls { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 12px; }
+    .btn { padding: 18px 10px; border: none; border-radius: 12px; background: white; color: #1f6b46; font-family: inherit; font-size: 1.05rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .btn:hover { background: #f1f5f9; transform: translateY(-2px); }
+    .btn:focus-visible { outline: 3px solid #fde68a; outline-offset: 2px; }
+
+    /* 데이터 검사 결과 화면 */
+    .problem-card { display: none; background: white; border-radius: 15px; padding: 28px; border-left: 6px solid #dc3545; box-shadow: 0 10px 30px rgba(0,0,0,0.25); color: #1e293b; }
+    .problem-card h2 { margin: 0 0 8px; font-size: 1.3rem; }
+    .problem-card .summary { margin: 0 0 16px; color: #55657d; line-height: 1.6; word-break: keep-all; }
+    .problem-list { list-style: none; margin: 0 0 8px; padding: 0; }
+    .problem-list li { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid #e0e7f1; line-height: 1.5; word-break: keep-all; }
+    .problem-list .tag { flex: none; min-width: 3.2rem; font-weight: 800; color: #dc3545; }
+    .problem-card .tips { margin: 12px 0 0; padding: 14px; background: #f3f6fa; border-radius: 10px; font-size: 0.92rem; line-height: 1.6; color: #2f3640; word-break: keep-all; }
+    .problem-card .tips ul { margin: 6px 0 0; padding-left: 20px; }
+    #partial-btn { width: 100%; padding: 16px; margin-top: 16px; border: none; border-radius: 10px; background: #2e7d5b; color: white; font-weight: bold; font-size: 1.05rem; cursor: pointer; font-family: inherit; }
+    #partial-btn:focus-visible { outline: 3px solid #1e293b; outline-offset: 2px; }
+
+    @media (max-width: 600px) {
+        body { padding: 14px; }
+        .header h1 { font-size: 1.6rem; }
+        .side { padding: 16px 18px 14px; }
+        .body { font-size: 1.2rem; }
+        .back .body { font-size: 1.3rem; }
+        .controls { grid-template-columns: 1fr 1fr; }
+        .controls .btn-list { grid-column: 1 / -1; }
+        .btn { padding: 16px 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .card, #bar, .btn { transition: none; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <div id="problem-screen" class="problem-card" role="alert">
+        <h2 id="problem-title"></h2>
+        <p id="problem-summary" class="summary"></p>
+        <ul id="problem-list" class="problem-list"></ul>
+        <div id="problem-tips" class="tips"></div>
+        <button id="partial-btn" type="button"></button>
+    </div>
+
+    <div id="card-screen">
+        <div class="header">
+            <h1 id="page-title">플래시카드</h1>
+            <p class="sub" id="page-sub"></p>
+            <p class="count"><span id="current">1</span> / <span id="total">0</span></p>
+            <div class="progress"><div id="bar"></div></div>
+        </div>
+
+        <div class="stage">
+            <div class="card" id="flashcard" role="button" tabindex="0" aria-label="카드 뒤집기">
+                <div class="side front">
+                    <div class="meta"><span class="chip chip-q">질문</span><span class="stars" id="stars"></span></div>
+                    <div class="body" id="question"></div>
+                    <div class="src" id="source"></div>
+                </div>
+                <div class="side back">
+                    <div class="meta"><span class="chip chip-a">정답</span></div>
+                    <div class="body" id="answer"></div>
+                    <div class="src"></div>
+                </div>
+            </div>
+        </div>
+
+        <p class="tip">카드를 누르면 정답이 보여요. 화살표 키나 좌우로 밀어서 넘길 수 있어요.</p>
+
+        <div class="controls">
+            <button class="btn" type="button" onclick="prevCard()">이전</button>
+            <button class="btn" type="button" onclick="nextCard()">다음</button>
+            <button class="btn btn-list" type="button" onclick="location.href='index.html'">목록으로 돌아가기</button>
+        </div>
+    </div>
+</div>
+
+<!-- ① 오류 수집용: 반드시 맨 위(②, ③보다 앞)에 두세요. 수정하지 마세요. -->
+<script>
+    window.__dataErrors = [];
+    window.addEventListener('error', function (e) {
+        window.__dataErrors.push({ msg: e.message, line: e.lineno });
+    });
+</script>
+
+<!-- ② 장 설정: 새 장을 만들 때 번호(1~15)와 제목만 고치세요. -->
+<script>
+    const LECTURE = { no: 10, title: "노인주거보장정책" };
+</script>
+
+<!-- ③ 카드 데이터: 노트북LM이 만든 const cards = [...]; 를 통째로 덮어쓰세요.
+     아래 2장은 화면 확인용 예시입니다. 덮어쓸 때 이 예시도 같이 지우세요.
+     카드마다 q(질문)와 a(정답)가 모두 있어야 합니다. -->
+<script>
+    const cards = [
+        {"q": "★★★ 노인이 노후에 시설로 격리되지 않고 오랫동안 살아온 친숙한 지역사회와 가정에서 계속 살아가는 것을 뜻하는 핵심 복지 개념은? [교재 10장 10.3절 우리나라 노인주거보장의 방향, 워크북 10장, 기말 연습문제정리 10강]",
+    "a": "Aging in Place (지역사회 계속 거주)"
+  },
+  {
+    "q": "★★★ 갑작스러운 주거지 이전으로 인한 심신 충격을 방지하고 익숙한 환경에서 단절 없이 거주하도록 보장하는 노인주거의 원칙은? [교재 10장 10.1절 노인주거보장정책의 이해, 2019년 기출]",
+    "a": "주거의 연속성"
+  },
+  {
+    "q": "★★★ 문턱, 미끄러운 바닥 등 안전사고(낙상)를 방지하고 편리한 주거환경을 보장해야 한다는 노인주거의 원칙은? [교재 10장 10.1절 노인주거보장정책의 이해, 워크북 10장, 기말 연습문제정리 10강]",
+    "a": "주거의 안정성"
+  },
+  {
+    "q": "★★★ 채광, 통풍, 소음, 단열 등의 문제를 해결하여 노인의 심신 건강 유지와 휴식을 돕는 노인주거의 원칙은? [교재 10장 10.1절 노인주거보장정책의 이해, 워크북 10장]",
+    "a": "주거의 건강성"
+  },
+  {
+    "q": "★★★ 노인이 살던 집에서 방문요양이나 재활 서비스를 편리하게 받을 수 있도록 주택 구조를 개선하는 노인주거의 원칙은? [교재 10장 10.1절 노인주거보장정책의 이해, 워크북 10장]",
+    "a": "주거의 요양 및 재활성"
+  },
+  {
+    "q": "★★★ 「노인복지법」 제32조에 규정된 노인주거복지시설 3종은? [교재 10장 10.2절 노인주거보장제도, 워크북 10장, 기말 연습문제정리 10강, 2018년 기출]",
+    "a": "양로시설, 노인공동생활가정, 노인복지주택"
+  },
+  {
+    "q": "★★★ 노인을 입소시켜 급식과 일상생활 편의를 제공하는 시설로, 입소정원이 10명 이상인 노인주거복지시설은? [교재 10장 10.2절 노인주거보장제도, 워크북 10장, 기말 연습문제정리 10강]",
+    "a": "양로시설"
+  },
+  {
+    "q": "★★★ 노인에게 가정과 같은 주거여건과 급식, 편의를 제공하는 소규모(입소정원 5명 이상 9명 이하) 시설은? [교재 10장 10.2절 노인주거보장제도, 워크북 10장, 기말 연습문제정리 10강]",
+    "a": "노인공동생활가정"
+  },
+  {
+    "q": "★★★ 노인에게 주거시설을 임대하여 편의·생활지도·상담·안전관리를 제공하는 시설로, 30세대 이상 규모인 시설은? [교재 10장 10.2절 노인주거보장제도, 워크북 10장, 기말 연습문제정리 10강]",
+    "a": "노인복지주택"
+  },
+  {
+    "q": "★★★ 재가보호를 위한 주택보장 중 현금급여로서 임차가구에게는 임차료를, 자가가구에게는 주택수선유지비를 지원하는 제도는? [교재 10장 10.2절 노인주거보장제도, 워크북 10장]",
+    "a": "주거급여"
+  },
+  {
+    "q": "★★★ 재가보호를 위한 현물급여로서 저소득 주거취약가구의 단열, 창호, 난방, 전기 등 주택 개·보수를 직접 시공 지원하는 제도는? [교재 10장 10.2절 노인주거보장제도, 워크북 10장]",
+    "a": "주거환경개선서비스"
+  },
+  {
+    "q": "★★★ 영구임대주택 1~2층에 복지관을 설치하고 상층부에 무장애설계 주거를 배치하여 2015년 도입된 맞춤형 주택 모델은? [교재 10장 10.2절 노인주거보장제도]",
+    "a": "공공실버주택 (현 고령자 복지주택)"
+  },
+  {
+    "q": "★★★ 고령자의 안전한 거주를 위해 문턱 제거, 안전손잡이 등 물리적 장벽을 없애는 설계를 무엇이라 하는가? [교재 10장 10.2절 노인주거보장제도, 워크북 10장]",
+    "a": "무장애화 (Barrier Free, 무장애설계)"
+  },
+  {
+    "q": "★★★ 노인주거에 대한 법적 근거를 최초로 마련한 우리나라의 복지 모법은? [교재 10장 10.2절 노인주거보장제도, 워크북 10장]",
+    "a": "1981년 「노인복지법」"
+  },
+  {
+    "q": "★★★ 현재 우리나라 노인주거 공급체계가 직면한 가장 대표적인 구조적 한계(양극화)는? [교재 10장 10.2절 노인주거보장제도, 워크북 10장]",
+    "a": "저소득층용 공공임대주택과 고소득층용 고가 실버타운으로 양극화되어 중산층 노인을 위한 주거 대안이 부재한 점"
+  },
+  {
+    "q": "★★★ 2012년 제정되어 65세 이상 노인을 주거약자로 명시하고 편의시설 설치기준과 개조비용 지원을 규정한 법률은? [교재 10장 10.2절 노인주거보장제도, 워크북 10장]",
+    "a": "「장애인·고령자 등 주거약자 지원에 관한 법률」 (주거약자법)"
+  },
+  {
+    "q": "★★★ 주거를 투기나 자산 증식의 금융 상품(buying)이 아닌, 인간다운 삶을 누릴 수 있는 기본 권리(living)로 보는 관점은? [교재 10장 10.3절 우리나라 노인주거보장의 방향, 강의록 10강]",
+    "a": "주거권 (주거의 탈상품화)"
+  },
+  {
+    "q": "★★☆ 노인주거보장에 국가 개입이 필요한 4대 배경 요인은? [교재 10장 10.1절 노인주거보장정책의 이해, 워크북 10장, 기말 연습문제정리 10강]",
+    "a": "노인인구의 급증, 가족 부양의식 약화(단독·독거노인 증가), 노화에 부적합한 주거환경, 은퇴 후 소득감소로 인한 주거 불안정"
+  },
+  {
+    "q": "★★☆ 노인 주거환경 보장 시 반드시 고려해야 할 3대 기본 사항은? [교재 10장 10.1절 노인주거보장정책의 이해, 워크북 10장]",
+    "a": "신체적 기능 변화에 따른 주거 조정, 소득보장과 연계된 주거보장, 사회적 네트워크 형성"
+  },
+  {
+    "q": "★★☆ 2002년 UN '마드리드 국제고령화행동계획'이 노인 주거와 관련하여 명시한 기본 원칙 2가지는? [교재 10장 10.1절 노인주거보장정책의 이해]",
+    "a": "개인의 선호와 변화하는 능력에 맞춘 안전하고 적응 가능한 환경 & 가능한 한 오랜 기간 가정에서 생활(Aging in Place)"
+  },
+  {
+    "q": "★★☆ 「노인복지법」 제8조(노인전용주거시설)가 실행력과 강제성 면에서 비판받는 주된 이유는? [교재 10장 10.2절 노인주거보장제도, 워크북 10장]",
+    "a": "시설 공급자에 대한 지원 규정을 '지원할 수 있다'라는 임의규정으로 명시하여 국가의 책무성이 약하기 때문"
+  },
+  {
+    "q": "★★☆ 양로시설과 노인공동생활가정의 '무료 입소 대상자' 기준은? [교재 10장 10.2절 노인주거보장제도]",
+    "a": "국민기초생활보장 생계·의료급여 수급자, 부양의무자 부양기피 요보호 노인, 학대피해 긴급보호 노인(65세 이상)"
+  },
+  {
+    "q": "★★☆ 양로시설 및 노인공동생활가정의 '실비 입소 대상자'의 법정 소득 기준은? [교재 10장 10.2절 노인주거보장제도]",
+    "a": "본인 및 부양의무자의 월평균소득이 통계청 고시 '도시근로자 1인당 월평균소득액' 이하인 65세 이상 노인"
+  },
+  {
+    "q": "★★☆ 양로시설 및 노인공동생활가정에 비용을 전액 자부담하는 '유료 입소' 및 '노인복지주택'의 입소 연령 기준은? [교재 10장 10.2절 노인주거보장제도]",
+    "a": "60세 이상 (배우자는 60세 미만이어도 동반 입소 가능)"
+  },
+  {
+    "q": "★★☆ 주거급여 수급자 중 자가 주택 소유자에게 주택 노후도에 따라 지원하는 수선유지비 3단계 구분은? [교재 10장 10.2절 노인주거보장제도, 워크북 10장]",
+    "a": "경보수, 중보수, 대보수"
+  },
+  {
+    "q": "★★☆ 기초생활수급자 등 최저소득계층을 위해 50년 이상 임대되며 입주자의 약 80%가 독거노인으로 구성된 공공임대주택은? [교재 10장 10.2절 노인주거보장제도]",
+    "a": "영구임대주택"
+  },
+  {
+    "q": "★★☆ 2023년 말 기준 우리나라 시니어 레지던스 공급 물량이 65세 이상 노인 인구에서 차지하는 비율 수준은? [교재 10장 10.2절 노인주거보장제도]",
+    "a": "약 0.12% (12,962세대로 일본 2.0%, 미국 4.8% 대비 매우 저조)"
+  },
+  {
+    "q": "★★☆ 2025년 국토교통부가 도심 내 중산층 고령자를 위해 공급을 추진하고 있는 민간임대주택 모델은? [교재 10장 10.2절 노인주거보장제도]",
+    "a": "실버스테이 (Silver Stay)"
+  },
+  {
+    "q": "★★☆ 노인주택 정책에서 중앙부처인 국토교통부와 보건복지부의 기본적 역할 분담 차이는? [교재 10장 10.2절 노인주거보장제도]",
+    "a": "국토교통부는 공공임대주택 등 물리적 주택 공급 중심, 보건복지부는 주거복지시설과 케어서비스 연계 관리 중심"
+  },
+  {
+    "q": "★★☆ 노인을 수동적 복지수혜자가 아닌 자신의 삶을 주체적으로 결정하고 지역사회에 기여하는 권리의 주체로 보는 위상은? [교재 10장 10.2절 노인주거보장제도]",
+    "a": "선배시민 (Senior Citizen)"
+  },
+  {
+    "q": "★★☆ 우리나라 노인주거의 공공성 강화를 위해 추진해야 할 3대 정책 방향은? [교재 10장 10.3절 우리나라 노인주거보장의 방향, 워크북 10장]",
+    "a": "노인 중심 맞춤형 주거 구축, 보충적 재정지원(주거비 보조) 확대, 지역사회 서비스 연계 주거복지 구축"
+  },
+  {
+    "q": "★★☆ 1942년 영국 베버리지 보고서가 제시한 5대 사회악(거인) 중 주거 문제와 직접 관련된 항목은? [교재 10장 10.3절 우리나라 노인주거보장의 방향, 강의록 10강]",
+    "a": "불결 (Squalor)"
+  },
+  {
+    "q": "★★☆ 도서 『동자동 사람들』이 고발한 주거 상품화 사회에서 극빈 노인들이 직면한 역설적 현실은? [강의록 10강]",
+    "a": "평당 기준으로 가장 비싼 월세를 내면서도 채광·환기·화장실이 없는 불결과 고독사에 방치되는 현실"
+  },
+  {
+    "q": "★★☆ 스웨덴 노인연금자협회가 노후 주택 개선 운동에서 내걸었던 권리 표어는? [강의록 10강]",
+    "a": "'엘리베이터는 자유다' (주거환경 개선은 시혜가 아닌 시민의 기본 권리)"
+  },
+  {
+    "q": "★☆☆ 물리적 건축물(house)을 넘어 안전, 건강, 정서적 유대 및 사회적 관계망까지 포괄하는 삶의 터전 개념은? [교재 10장 10.1절 노인주거보장정책의 이해]",
+    "a": "주거 (Home)"
+  },
+  {
+    "q": "★☆☆ 노년기에 주거환경이 삶의 만족도와 건강에 미치는 영향이 유독 커지는 이유는? [교재 10장 10.1절 노인주거보장정책의 이해]",
+    "a": "신체적 쇠약과 은퇴·사회활동 축소로 하루 일과의 대부분을 주거공간에서 보내기 때문"
+  },
+  {
+    "q": "★☆☆ 한국 노인의 주거점유 형태에서 전반적으로 자가 소유율이 높지만 연령이 높아질수록 나타나는 변화는? [교재 10장 10.1절 노인주거보장정책의 이해]",
+    "a": "소득 감소와 의료비 지출로 인해 주택을 처분하고 전·월세로 이전하여 자가율이 감소함"
+  },
+  {
+    "q": "★☆☆ 헌법재판소 판례에서 건강하고 쾌적한 환경에서 생활할 권리(헌법 제35조)에 포함된다고 판시한 환경의 범위는? [교재 10장 10.1절 노인주거보장정책의 이해, 강의록 10강]",
+    "a": "자연적 환경뿐만 아니라 인간이 인공적으로 조성한 생활 및 주거환경까지 모두 포함"
+  },
+  {
+    "q": "★☆☆ 국민이 물리적·사회적 위험에서 벗어나 쾌적하고 안정된 주거생활을 할 권리(주거권)를 명시한 기본 법률은? [교재 10장 10.1절 노인주거보장정책의 이해, 강의록 10강]",
+    "a": "「주거기본법」 제2조"
+  },
+  {
+    "q": "★☆☆ 제1차 장기주택종합계획(2003~2012)에서 인구고령화에 대비하여 제시한 4대 정책 방향은? [교재 10장 10.2절 노인주거보장제도, 워크북 10장]",
+    "a": "노인공동생활주택 공급, 무장애화 정책 추진, 복지·의료시설 연계, 주택자산 활용(역모기지) 주거지원"
+  },
+  {
+    "q": "★☆☆ 제2차 장기주택종합계획(2013~2022)에서 구체화된 대표적 주택자산 활용 노후소득·주거보장 제도는? [교재 10장 10.2절 노인주거보장제도]",
+    "a": "역모기지제도 (주택연금)"
+  },
+  {
+    "q": "★☆☆ 「장애인·고령자 등 주거약자 지원에 관한 법률」이 훌륭한 법 규정에도 불구하고 집행력 한계를 갖는 이유는? [교재 10장 10.2절 노인주거보장제도, 워크북 10장]",
+    "a": "정책 집행을 뒷받침할 구체적인 '재원조달 방안'이 법률에 명문화되지 않았기 때문"
+  },
+  {
+    "q": "★☆☆ 「노인복지법」상 양로시설과 노인공동생활가정의 가장 결정적인 시설 규모 차이는? [교재 10장 10.2절 노인주거보장제도, 워크북 10장]",
+    "a": "양로시설은 10명 이상, 노인공동생활가정은 5명 이상 9명 이하"
+  },
+  {
+    "q": "★☆☆ 노인복지주택의 시설 규모 기준은 몇 세대 이상인가? [교재 10장 10.2절 노인주거보장제도, 워크북 10장]",
+    "a": "30세대 이상"
+  },
+  {
+    "q": "★☆☆ 주거급여에서 임차가구에게 지급되는 급여 명목은? [교재 10장 10.2절 노인주거보장제도, 워크북 10장]",
+    "a": "기준임대료 상한의 임차료 (현금급여)"
+  },
+  {
+    "q": "★☆☆ 주거환경개선서비스의 주요 지원 대상 소득 기준은? [교재 10장 10.2절 노인주거보장제도]",
+    "a": "기준중위소득 80% 이하 주거취약가구 (기초수급자, 차상위 등)"
+  },
+  {
+    "q": "★☆☆ 2023년 기준 고령자 복지주택을 전국에서 가장 많은 비중(약 24%, 1,680호)으로 추진하고 있는 지자체는? [교재 10장 10.2절 노인주거보장제도]",
+    "a": "경기도"
+  },
+  {
+    "q": "★☆☆ 영국의 주거 지원 체계(자가 주택 → 레지던스 하우스 → 요양원)가 한국에 주는 핵심 시사점은? [강의록 10강]",
+    "a": "가정과 요양원 사이에 돌봄과 주거가 결합된 '중간 단계 주거 모델'의 필요성"
+  },
+  {
+    "q": "★☆☆ 지역사회 계속 거주(Aging in Place)의 완성을 위해 반드시 결합되어야 하는 하드웨어와 소프트웨어는? [강의록 10강]",
+    "a": "무장애 개조 주택(하드웨어)과 방문 요양·보건의료 및 사회적 관계망(소프트웨어)"
+  },
+  {
+    "q": "★☆☆ 노인주거보장의 기본 원리 중 '장애가 있더라도 가능한 한 일반 시민과 동일한 생활환경에서 살아갈 수 있도록 해야 한다'는 원리는? [교재 10장 10.1절 노인주거보장정책의 이해, 2016년 기출]",
+    "a": "정상화의 실현 (Normalization)"}
+    ];</script>
+
+<!-- ④ 프로그램 본체: 수정하지 마세요. -->
+<script>
+    var deck = [];
+    var cur = 0;
+    var swapTimer = null;
+
+    document.title = '제' + LECTURE.no + '장 - ' + LECTURE.title;
+    document.getElementById('page-title').textContent = '제' + LECTURE.no + '장 플래시카드';
+    document.getElementById('page-sub').textContent = LECTURE.title;
+
+    var cardEl = document.getElementById('flashcard');
+
+    function reduceMotion() {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+
+    /* ---------- 데이터 검사 ---------- */
+    function validateCards(data) {
+        var errors = [];
+        var valid = [];
+
+        if (!Array.isArray(data) || data.length === 0) {
+            errors.push({ tag: '전체', text: 'cards가 비어 있거나 배열([ ])이 아닙니다.' });
+            return { errors: errors, valid: valid };
+        }
+
+        data.forEach(function (item, i) {
+            var tag = (i + 1) + '번 카드';
+            var problems = [];
+            if (!item || typeof item !== 'object') {
+                problems.push('카드가 { } 형식이 아닙니다.');
+            } else {
+                if (typeof item.q !== 'string' || !item.q.trim()) problems.push('q(질문)가 없거나 비어 있습니다.');
+                if (typeof item.a !== 'string' || !item.a.trim()) problems.push('a(정답)가 없거나 비어 있습니다.');
+            }
+            if (problems.length) {
+                problems.forEach(function (t) { errors.push({ tag: tag, text: t }); });
+            } else {
+                valid.push(item);
+            }
+        });
+
+        return { errors: errors, valid: valid };
+    }
+
+    function showProblemScreen(opts) {
+        document.getElementById('card-screen').style.display = 'none';
+        document.getElementById('problem-screen').style.display = 'block';
+        document.getElementById('problem-title').textContent = opts.title;
+        document.getElementById('problem-summary').textContent = opts.summary;
+
+        var list = document.getElementById('problem-list');
+        list.innerHTML = '';
+        opts.items.forEach(function (it) {
+            var li = document.createElement('li');
+            var tag = document.createElement('span');
+            tag.className = 'tag';
+            tag.textContent = it.tag;
+            var txt = document.createElement('span');
+            txt.textContent = it.text;
+            li.appendChild(tag);
+            li.appendChild(txt);
+            list.appendChild(li);
+        });
+
+        var tips = document.getElementById('problem-tips');
+        tips.innerHTML = '';
+        if (opts.tips && opts.tips.length) {
+            tips.appendChild(document.createTextNode('자주 생기는 원인'));
+            var ul = document.createElement('ul');
+            opts.tips.forEach(function (t) {
+                var li = document.createElement('li');
+                li.textContent = t;
+                ul.appendChild(li);
+            });
+            tips.appendChild(ul);
+            tips.style.display = 'block';
+        } else {
+            tips.style.display = 'none';
+        }
+
+        var btn = document.getElementById('partial-btn');
+        if (opts.buttonText) {
+            btn.textContent = opts.buttonText;
+            btn.style.display = 'block';
+            btn.onclick = opts.onButton;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    function startDeck(list) {
+        deck = list;
+        cur = 0;
+        document.getElementById('problem-screen').style.display = 'none';
+        document.getElementById('card-screen').style.display = 'block';
+        render();
+    }
+
+    function init() {
+        // 데이터 문법 오류: ③ 블록이 아예 실행되지 못한 경우
+        if (typeof cards === 'undefined') {
+            var items = window.__dataErrors.map(function (er) {
+                return { tag: er.line ? ('약 ' + er.line + '줄') : '오류', text: er.msg };
+            });
+            if (!items.length) items.push({ tag: '오류', text: 'cards를 찾을 수 없습니다. const cards = [ ... ]; 형태가 맞는지 확인하세요.' });
+            showProblemScreen({
+                title: '⚠️ 카드 데이터를 읽지 못했어요',
+                summary: '데이터 부분에 문법 오류가 있어서 프로그램이 멈췄습니다. 아래 줄 근처를 확인하세요.',
+                items: items,
+                tips: [
+                    '문장 안에 큰따옴표(")가 들어 있음 → 작은따옴표(\')로 바꾸기',
+                    '카드와 카드 사이 쉼표(,) 빠짐, 또는 맨 끝의 ]; 가 지워짐',
+                    '문장 한가운데에서 줄이 바뀜 (한 문장은 한 줄로)',
+                    '붙여넣은 글에 // 가 포함되어 뒷부분이 주석 처리됨'
+                ]
+            });
+            return;
+        }
+
+        var result = validateCards(cards);
+
+        if (result.errors.length === 0) {
+            startDeck(result.valid);
+            return;
+        }
+
+        var total = Array.isArray(cards) ? cards.length : 0;
+        var badCount = total - result.valid.length;
+        showProblemScreen({
+            title: '⚠️ 고칠 곳이 ' + result.errors.length + '군데 있어요',
+            summary: badCount > 0
+                ? '전체 ' + total + '장 중 ' + badCount + '장에 문제가 있습니다. 데이터를 고치고 새로고침하세요.'
+                : '카드 데이터를 확인하고 새로고침하세요.',
+            items: result.errors,
+            tips: ['카드마다 q(질문)와 a(정답)가 모두 있어야 하고, 둘 다 글자(따옴표로 감싼 문장)여야 합니다'],
+            buttonText: result.valid.length > 0 ? '오류 없는 ' + result.valid.length + '장만 먼저 보기' : null,
+            onButton: function () { startDeck(result.valid); }
+        });
+    }
+
+    /* ---------- 카드 표시 ---------- */
+    // 질문 앞의 ★(중요도)와 끝의 [출처]를 따로 떼어 작은 표식으로 보여줍니다.
+    function parseQuestion(raw) {
+        var text = raw.trim();
+        var stars = '';
+        var src = '';
+        var m = text.match(/^([★☆]{1,5})\s*/);
+        if (m) { stars = m[1]; text = text.slice(m[0].length); }
+        var s = text.match(/\s*\[([^\]]{1,120})\]\s*$/);
+        if (s) { src = s[1]; text = text.slice(0, s.index); }
+        if (!text.trim()) { text = raw.trim(); stars = ''; src = ''; }
+        return { stars: stars, src: src, text: text };
+    }
+
+    function render() {
+        var c = deck[cur];
+        var p = parseQuestion(c.q);
+
+        document.getElementById('question').textContent = p.text;
+        document.getElementById('answer').textContent = c.a.trim();
+        document.getElementById('source').textContent = p.src ? '출처: ' + p.src : '';
+
+        var starsEl = document.getElementById('stars');
+        if (p.stars) {
+            var filled = (p.stars.match(/★/g) || []).length;
+            starsEl.textContent = p.stars;
+            starsEl.setAttribute('aria-label', '중요도 ' + p.stars.length + '개 중 ' + filled + '개');
+            starsEl.style.display = 'inline-block';
+        } else {
+            starsEl.style.display = 'none';
+        }
+
+        document.getElementById('current').textContent = cur + 1;
+        document.getElementById('total').textContent = deck.length;
+        document.getElementById('bar').style.width = ((cur + 1) / deck.length * 100) + '%';
+    }
+
+    function flip() { cardEl.classList.toggle('flipped'); }
+
+    function go(delta) {
+        cur = (cur + delta + deck.length) % deck.length;
+        clearTimeout(swapTimer);
+        if (cardEl.classList.contains('flipped') && !reduceMotion()) {
+            // 먼저 카드를 앞면으로 돌리고, 옆면이 되어 안 보일 때 내용을 바꿔서 다음 정답이 미리 비치지 않게 함
+            cardEl.classList.remove('flipped');
+            swapTimer = setTimeout(render, 300);
+        } else {
+            cardEl.classList.remove('flipped');
+            render();
+        }
+    }
+    function nextCard() { go(1); }
+    function prevCard() { go(-1); }
+
+    cardEl.addEventListener('click', flip);
+
+    document.addEventListener('keydown', function (e) {
+        if (document.getElementById('card-screen').style.display === 'none') return;
+        if (e.key === 'ArrowRight') { nextCard(); }
+        else if (e.key === 'ArrowLeft') { prevCard(); }
+        else if ((e.key === ' ' || e.key === 'Enter') && e.target.tagName !== 'BUTTON') { e.preventDefault(); flip(); }
+    });
+
+    // 스마트폰: 좌우로 밀어서 넘기기
+    var touchX = null, touchY = null;
+    cardEl.addEventListener('touchstart', function (e) {
+        touchX = e.touches[0].clientX;
+        touchY = e.touches[0].clientY;
+    }, { passive: true });
+    cardEl.addEventListener('touchend', function (e) {
+        if (touchX === null) return;
+        var dx = e.changedTouches[0].clientX - touchX;
+        var dy = e.changedTouches[0].clientY - touchY;
+        touchX = null;
+        if (Math.abs(dx) > 60 && Math.abs(dy) < 50) {
+            if (dx < 0) nextCard(); else prevCard();
+        }
+    }, { passive: true });
+
+    init();
+</script>
+</body>
+</html>

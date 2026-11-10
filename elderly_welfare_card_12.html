@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>노인복지론 플래시카드</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* 눈이 편한 차분한 초록 계열 (index.html의 플래시카드 색과 맞춤) */
+    body {
+        font-family: 'Pretendard', sans-serif;
+        background: linear-gradient(135deg, #2f7d5b 0%, #1b4332 100%);
+        background-attachment: fixed;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .container { width: 100%; max-width: 850px; margin: auto; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+    .header { text-align: center; color: white; margin-bottom: 20px; }
+    .header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 6px; }
+    .header .sub { font-size: 1.05rem; font-weight: 600; opacity: 0.92; margin-bottom: 10px; word-break: keep-all; }
+    .header .count { font-size: 1.1rem; font-weight: 700; }
+    .progress { max-width: 340px; height: 6px; margin: 12px auto 0; background: rgba(255,255,255,0.25); border-radius: 3px; overflow: hidden; }
+    #bar { height: 100%; width: 0; background: white; border-radius: 3px; transition: width 0.3s; }
+
+    /* 카드 */
+    .stage { perspective: 1400px; margin: 12px 0; }
+    .card {
+        position: relative;
+        width: 100%;
+        height: min(460px, 60vh);
+        height: min(460px, 60dvh);
+        min-height: 320px;
+        cursor: pointer;
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .card.flipped { transform: rotateY(180deg); }
+    .card:focus-visible { outline: 3px solid #fde68a; outline-offset: 4px; }
+
+    .side {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 20px 26px 18px;
+        border-radius: 20px;
+        overflow-y: auto;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        word-break: keep-all;
+        white-space: pre-line;
+    }
+    .front { background: white; color: #1e293b; }
+    .back { background: #f0f7f2; color: #1b4332; transform: rotateY(180deg); }
+
+    .meta { display: flex; align-items: center; justify-content: space-between; min-height: 28px; white-space: normal; }
+    .chip { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; }
+    .chip-q { background: #f1f5f9; color: #475569; }
+    .chip-a { background: #cfe8d8; color: #1b4332; }
+    .stars { font-size: 0.95rem; font-weight: 800; color: #1f6b46; background: #e3f1e8; padding: 3px 10px; border-radius: 20px; display: none; }
+
+    /* 내용이 길어도 위쪽이 잘리지 않도록 margin:auto로 가운데 맞춤 */
+    .body { margin: auto; padding: 14px 0; text-align: center; font-size: 1.4rem; font-weight: 700; line-height: 1.55; }
+    .back .body { font-size: 1.55rem; font-weight: 800; }
+    .src { min-height: 1.2em; text-align: center; font-size: 0.85rem; color: #64748b; white-space: normal; }
+
+    .tip { text-align: center; color: rgba(255,255,255,0.85); font-size: 0.9rem; margin: 4px 0 14px; word-break: keep-all; }
+
+    .controls { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 12px; }
+    .btn { padding: 18px 10px; border: none; border-radius: 12px; background: white; color: #1f6b46; font-family: inherit; font-size: 1.05rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .btn:hover { background: #f1f5f9; transform: translateY(-2px); }
+    .btn:focus-visible { outline: 3px solid #fde68a; outline-offset: 2px; }
+
+    /* 데이터 검사 결과 화면 */
+    .problem-card { display: none; background: white; border-radius: 15px; padding: 28px; border-left: 6px solid #dc3545; box-shadow: 0 10px 30px rgba(0,0,0,0.25); color: #1e293b; }
+    .problem-card h2 { margin: 0 0 8px; font-size: 1.3rem; }
+    .problem-card .summary { margin: 0 0 16px; color: #55657d; line-height: 1.6; word-break: keep-all; }
+    .problem-list { list-style: none; margin: 0 0 8px; padding: 0; }
+    .problem-list li { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid #e0e7f1; line-height: 1.5; word-break: keep-all; }
+    .problem-list .tag { flex: none; min-width: 3.2rem; font-weight: 800; color: #dc3545; }
+    .problem-card .tips { margin: 12px 0 0; padding: 14px; background: #f3f6fa; border-radius: 10px; font-size: 0.92rem; line-height: 1.6; color: #2f3640; word-break: keep-all; }
+    .problem-card .tips ul { margin: 6px 0 0; padding-left: 20px; }
+    #partial-btn { width: 100%; padding: 16px; margin-top: 16px; border: none; border-radius: 10px; background: #2e7d5b; color: white; font-weight: bold; font-size: 1.05rem; cursor: pointer; font-family: inherit; }
+    #partial-btn:focus-visible { outline: 3px solid #1e293b; outline-offset: 2px; }
+
+    @media (max-width: 600px) {
+        body { padding: 14px; }
+        .header h1 { font-size: 1.6rem; }
+        .side { padding: 16px 18px 14px; }
+        .body { font-size: 1.2rem; }
+        .back .body { font-size: 1.3rem; }
+        .controls { grid-template-columns: 1fr 1fr; }
+        .controls .btn-list { grid-column: 1 / -1; }
+        .btn { padding: 16px 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .card, #bar, .btn { transition: none; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <div id="problem-screen" class="problem-card" role="alert">
+        <h2 id="problem-title"></h2>
+        <p id="problem-summary" class="summary"></p>
+        <ul id="problem-list" class="problem-list"></ul>
+        <div id="problem-tips" class="tips"></div>
+        <button id="partial-btn" type="button"></button>
+    </div>
+
+    <div id="card-screen">
+        <div class="header">
+            <h1 id="page-title">플래시카드</h1>
+            <p class="sub" id="page-sub"></p>
+            <p class="count"><span id="current">1</span> / <span id="total">0</span></p>
+            <div class="progress"><div id="bar"></div></div>
+        </div>
+
+        <div class="stage">
+            <div class="card" id="flashcard" role="button" tabindex="0" aria-label="카드 뒤집기">
+                <div class="side front">
+                    <div class="meta"><span class="chip chip-q">질문</span><span class="stars" id="stars"></span></div>
+                    <div class="body" id="question"></div>
+                    <div class="src" id="source"></div>
+                </div>
+                <div class="side back">
+                    <div class="meta"><span class="chip chip-a">정답</span></div>
+                    <div class="body" id="answer"></div>
+                    <div class="src"></div>
+                </div>
+            </div>
+        </div>
+
+        <p class="tip">카드를 누르면 정답이 보여요. 화살표 키나 좌우로 밀어서 넘길 수 있어요.</p>
+
+        <div class="controls">
+            <button class="btn" type="button" onclick="prevCard()">이전</button>
+            <button class="btn" type="button" onclick="nextCard()">다음</button>
+            <button class="btn btn-list" type="button" onclick="location.href='index.html'">목록으로 돌아가기</button>
+        </div>
+    </div>
+</div>
+
+<!-- ① 오류 수집용: 반드시 맨 위(②, ③보다 앞)에 두세요. 수정하지 마세요. -->
+<script>
+    window.__dataErrors = [];
+    window.addEventListener('error', function (e) {
+        window.__dataErrors.push({ msg: e.message, line: e.lineno });
+    });
+</script>
+
+<!-- ② 장 설정: 새 장을 만들 때 번호(1~15)와 제목만 고치세요. -->
+<script>
+    const LECTURE = { no: 12, title: "노인복지실천" };
+</script>
+
+<!-- ③ 카드 데이터: 노트북LM이 만든 const cards = [...]; 를 통째로 덮어쓰세요.
+     아래 2장은 화면 확인용 예시입니다. 덮어쓸 때 이 예시도 같이 지우세요.
+     카드마다 q(질문)와 a(정답)가 모두 있어야 합니다. -->
+<script>
+    const cards = [
+        {"q":"★★★ 노인의 문제를 개인·가족의 기능 결함이 아닌 사회경제적 구조와 권력관계의 모순으로 규정하는 실천 관점은? [교재 12장 12.1절 노인복지실천의 이해, 워크북 12장, 기말 연습문제정리 12강]",
+    "a": "제도적 (비판적) 사회복지실천"
+  },
+  {
+    "q": "★★★ 노인의 문제를 개인과 가족이 사회 환경에 제대로 기능하지 못해 발생한 문제로 보아 개인의 적응과 치료를 추구하는 실천 관점은? [교재 12장 12.1절 노인복지실천의 이해, 워크북 12장, 기말 연습문제정리 12강]",
+    "a": "잔여적 사회복지실천"
+  },
+  {
+    "q": "★★★ 노인복지실천이 복합적 욕구를 가진 노인을 개별적으로 지원하는 사례관리를 넘어 지향해야 할 본질적 궁극 방향은? [교재 12장 12.4절 노인복지실천 사례관리를 넘어 사회관리로, 워크북 12장]",
+    "a": "사회관리 (노인을 사회적 주체로 인식하고 정책·제도 개선에 참여하도록 하는 실천)"
+  },
+  {
+    "q": "★★★ 1869년 영국 런던에서 중복 자선 방지와 빈민 조사를 통한 자립을 도모하기 위해 설립되어 개별사회사업(케이스워크)의 효시가 된 조직은? [교재 12장 12.1절 노인복지실천의 이해, 표 12-2, 2018년 기출]",
+    "a": "자선조직협회 (COS)"
+  },
+  {
+    "q": "★★★ 1884년 영국 런던 화이트채플에 설립된 세계 최초의 인보관으로, 대학생과 지식인이 빈민가에 상주하며 집단사회사업과 사회개혁의 효시가 된 기관은? [교재 12장 12.1절 노인복지실천의 이해, 표 12-2, 워크북 12장]",
+    "a": "토인비 홀 (Toynbee Hall)"
+  },
+  {
+    "q": "★★★ 복합적 욕구를 가진 노인에게 자원을 체계적으로 연계하여 시설 조기입소를 막고 1차 집단 보호능력 향상 및 재가보호(Aging in Place) 기회를 증대시키는 실천기법은? [교재 12장 12.2절 표 12-3, 2013년·2016년 기출]",
+    "a": "노인사례관리 (Case Management)"
+  },
+  {
+    "q": "★★★ 노인사례관리 과정에서 클라이언트의 서비스 욕구를 규명하고 사적·공적 자원체계의 능력을 종합적으로 평가·진단하는 단계는? [교재 12장 12.2절 잔여적 노인복지실천, 2016년 기출]",
+    "a": "사정 (Assessment) 단계"
+  },
+  {
+    "q": "★★★ 파울로 프레이리가 주창한 것으로, 단순한 일(실천)에 매몰되지 않고 일의 본질과 구조적 의미를 깊이 성찰하며 실천하는 이상적인 사회복지사 상은? [교재 12장 12.4절, 강의록 12강, 2017년 기출]",
+    "a": "마리다 (Marida, 프락시스형 사회복지사)"
+  },
+  {
+    "q": "★★★ 선배시민 실천의 세 가지 유형 중 '나를 살펴보다'를 표방하며, 학습동아리를 통해 지역사회 문제를 학습·토론하고 성찰하는 유형은? [교재 12장 12.4절, 워크북 12장]",
+    "a": "소크라테스 유형"
+  },
+  {
+    "q": "★★★ 선배시민 실천 유형 중 '주위를 둘러보다'를 표방하며, 현장의 문제를 직접 조사·연구하여 지역사회 이슈를 발굴·공론화하는 유형은? [교재 12장 12.4절, 워크북 12장]",
+    "a": "헬렌 켈러 유형"
+  },
+  {
+    "q": "★★★ 선배시민 실천 유형 중 '함께 만들어 가다'를 표방하며, 시민 조직화와 능동적 행동으로 차별적 법·제도를 개혁하는 유형은? [교재 12장 12.4절, 워크북 12장]",
+    "a": "로자 파크스 유형"
+  },
+  {
+    "q": "★★★ 문제의 징후가 보이는 초기에 조기진단과 적절한 처치를 제공하여 기능 손상과 조기 시설수용을 예방하는 노인복지실천 개입수준은? [교재 12장 12.2절 표 12-3, 기말 연습문제정리 12강]",
+    "a": "2차적 개입수준"
+  },
+  {
+    "q": "★★★ 건강한 노인이 활동적인 삶을 유지하도록 질병 발생 전에 건강증진과 교육을 제공하는 노인복지실천 개입수준은? [교재 12장 12.2절 표 12-3, 워크북 12장]",
+    "a": "1차적 개입수준"
+  },
+  {
+    "q": "★★★ 심각한 기능 장애가 발생한 노인을 대상으로 더 이상의 악화를 방지하고 잔존기능을 회복시키기 위해 재활과 장기요양보호를 제공하는 개입수준은? [교재 12장 12.2절 표 12-3, 워크북 12장]",
+    "a": "3차적 개입수준"
+  },
+  {
+    "q": "★★★ 노인복지실천 초기단계 중 '무엇이 이 클라이언트를 다르게 만들 것인가'라는 질문에서 출발하며, 클라이언트와 긍정적인 신뢰관계(라포)를 형성하는 단계는? [교재 12장 12.2절 잔여적 노인복지실천, 기말 연습문제정리 12강]",
+    "a": "접수 (Intake) 단계"
+  },
+  {
+    "q": "★★★ 구조적 모순과 경제적 불평등을 외면하고, 오직 부적응한 개인의 인접 환경 대처능력 결여로만 환원하여 피해자에게 책임을 전가하는 오류 현상은? [교재 12장 12.1절 노인복지실천의 이해, 워크북 12장]",
+    "a": "희생자 비난 (Victim Blaming)"
+  },
+  {
+    "q": "★★★ 교재 12.4절에서 제시한 노인복지실천 패러다임의 궁극적 전환을 나타내는 핵심 명제는? [교재 12장 12.4절 노인복지실천 사례관리를 넘어 사회관리로]",
+    "a": "'불쌍한 사람을 돕는 것'에서 '불쌍한 사람이 생기지 않는 사회를 만드는 것'으로의 전환"
+  },
+  {
+    "q": "★★☆ 자선조직협회(COS)에서 가정을 직접 방문하여 생활실태를 조사하고 자립을 지도했던 자원봉사자로서 현대 전문 사회복지사의 시초가 된 인물들은? [교재 12장 12.1절 노인복지실천의 이해, 워크북 12장]",
+    "a": "우애방문원 (Friendly Visitor)"
+  },
+  {
+    "q": "★★☆ 복지시설의 역할을 바라보는 관점에서 자선조직협회(COS)와 인보관운동이 지향한 시설의 성격 차이는? [교재 12장 12.1절 표 12-2, 워크북 12장]",
+    "a": "자선조직협회는 수발과 보호를 제공하는 '케어센터', 인보관운동은 주민이 토론하고 소통하는 '커뮤니티센터'"
+  },
+  {
+    "q": "★★☆ 1889년 미국 시카고에 '헐 하우스(Hull House)'를 설립하여 이민자와 빈민을 위한 교육·노동운동을 주도하고 노벨평화상을 수상한 인물은? [교재 12장 12.1절 표 12-2]",
+    "a": "제인 아담스 (Jane Addams)"
+  },
+  {
+    "q": "★★☆ 제도적 사회복지실천에서 지배 이데올로기와 사회경제구조를 분석하여 개인을 사회구조에서 자유롭게 통제력을 갖도록 돕는 것이라고 정의한 학자는? [교재 12장 12.1절 노인복지실천의 이해]",
+    "a": "훅 (Fook, 2007)"
+  },
+  {
+    "q": "★★☆ 전통적 사회복지실천에서 '상황 속 인간'의 개념을 제시하며, 상황을 개인의 가족 등 인접 환경으로 제한하여 바라본 학자는? [교재 12장 12.1절 노인복지실천의 이해, 워크북 12장]",
+    "a": "해밀턴 (Hamilton)"
+  },
+  {
+    "q": "★★☆ 제도적 노인복지실천에서 사회복지사가 수행하는 핵심적 역할 3가지는? [교재 12장 12.3절 표 12-9, 워크북 12장]",
+    "a": "옹호자 (Advocate), 사회적 지지와 공감을 이끄는 매개자, 비판적 사회교육자"
+  },
+  {
+    "q": "★★☆ 잔여적 노인복지실천 2차적 개입수준에서 사회복지사가 수행하는 주요 역할 3가지는? [교재 12장 12.2절 표 12-3, 워크북 12장]",
+    "a": "클라이언트 발굴자, 임상가, 가능자"
+  },
+  {
+    "q": "★★☆ 잔여적 노인복지실천 3차적 개입수준에서 사회복지사가 수행하는 주요 역할 3가지는? [교재 12장 12.2절 표 12-3, 워크북 12장]",
+    "a": "사례관리자, 클라이언트 발굴자, 동원자"
+  },
+  {
+    "q": "★★☆ 사회복지실천 평가 기준 중 '당초 계획했던 목표를 얼마나 달성하였는가'를 측정하는 개념은? [교재 12장 12.2절 표 12-5, 워크북 12장]",
+    "a": "효과성 (Effectiveness)"
+  },
+  {
+    "q": "★★☆ 사회복지실천 평가 기준 중 '투입된 비용 대비 얼마나 높은 산출 성과를 거두었는가'를 측정하는 개념은? [교재 12장 12.2절 표 12-5, 워크북 12장]",
+    "a": "효율성 (Efficiency)"
+  },
+  {
+    "q": "★★☆ 사회복지실천 평가 기준 중 계약 내용의 성실한 이행과 더불어 전문직의 윤리와 가치를 준수했는가를 평가하는 개념은? [교재 12장 12.2절 표 12-5]",
+    "a": "책무성 (Accountability)"
+  },
+  {
+    "q": "★★☆ 노인사례관리 사정 과정에서 '사회적 관계' 영역을 평가할 때 검토하는 핵심 내용은? [교재 12장 12.2절 표 12-7, 2014년 기출]",
+    "a": "가족·이웃과의 접촉 빈도 등 객관적 고립 상태와 주관적인 외로움 및 고독감"
+  },
+  {
+    "q": "★★☆ 계획 단계에서 사회복지사와 클라이언트가 작성하는 서면 계약(contract)의 핵심 성격은? [교재 12장 12.2절 잔여적 노인복지실천]",
+    "a": "상호 의무와 과업을 명시하되, 서비스 진행 과정에서 상호 협의하에 수정·보완될 수 있음을 안내함"
+  },
+  {
+    "q": "★★☆ 노인복지실천 종결 후 클라이언트의 상태 유지 및 위험요소 점검을 위해 권장되는 사후조사 주기 간격은? [교재 12장 12.2절 잔여적 노인복지실천, 워크북 12장]",
+    "a": "종결 후 3개월, 6개월, 1년 간격"
+  },
+  {
+    "q": "★★☆ 제도적 노인복지실천이 노인빈곤과 노후보장을 바라보는 기본 철학적 관점은? [교재 12장 12.3절 제도적 노인복지실천, 워크북 12장]",
+    "a": "젊은 시절 사회적 의무를 다한 시민에게 국가가 사회적 연대를 통해 당연히 보장해야 할 '시민적 권리'"
+  },
+  {
+    "q": "★★☆ 초등학교 학급에서 휠체어를 탄 급우의 이동권을 위해 학교 내 물리적 장벽을 조사하고 개선했던 권리형 나눔 프로젝트는? [강의록 12강]",
+    "a": "'우리 학교는 소리에게 친절한가' 프로젝트"
+  },
+  {
+    "q": "★★☆ 제주도에서 장애인도 바다를 향유할 권리가 있음을 밝히고 수륙양용 특수 휠체어를 도입하여 해변 접근권을 보장한 청소년 인권 실천은? [강의록 12강]",
+    "a": "'바다를 바라는 바다' 프로젝트"
+  },
+  {
+    "q": "★☆☆ 미국사회복지사협회(NASW, 1974)가 규정한 사회복지실천의 기본 핵심 목적은? [교재 12장 12.1절 노인복지실천의 이해]",
+    "a": "개인·집단·지역사회의 기능을 향상·회복시키고 목적 달성에 필요한 사회적 역량을 향상하도록 조정하는 활동"
+  },
+  {
+    "q": "★☆☆ 쉐퍼 등(Sheafor et al.)이 제시한 노인복지실천 지침에서 노인을 바라보는 핵심 관점은? [교재 12장 12.2절 잔여적 노인복지실천, 기말 연습문제정리 12강]",
+    "a": "단순한 치료나 돌봄의 대상이 아니라 삶의 지혜와 역량을 지닌 '강점을 가진 존재'"
+  },
+  {
+    "q": "★☆☆ 잔여적 노인복지실천 과정을 시간적 흐름에 따라 3단계로 구분하면? [교재 12장 12.2절 잔여적 노인복지실천]",
+    "a": "초기단계(접수·사정) → 중간단계(계획·개입) → 종결단계(평가·종결)"
+  },
+  {
+    "q": "★☆☆ 잔여적 노인복지실천 초기 사정(assessment) 단계에서 고려해야 할 4대 핵심 요소는? [교재 12장 12.2절 잔여적 노인복지실천]",
+    "a": "욕구 명확화, 문제 인식 발견, 상황 관련 관계 파악, 지원 자원 유무 고려"
+  },
+  {
+    "q": "★☆☆ 노인의 신체적 손상 정도 분류 중 ADL은 정상이나 전화·장보기 등 IADL 2개 정도에 불편이 있는 상태는? [교재 12장 12.2절 표 12-4]",
+    "a": "미미한 손상"
+  },
+  {
+    "q": "★☆☆ 노인의 퇴직 시 적응 유형 중 자원 상실에 대한 불안을 감추기 위해 과도하게 공격적이거나 집착적인 활동을 보이는 유형은? [교재 12장 12.2절 표 12-4]",
+    "a": "무장 (Armored) 유형"
+  },
+  {
+    "q": "★☆☆ 노인의 퇴직 시 적응 유형 중 과거 인생을 실패로 규정하고 자책감, 우울, 무가치감에 빠지는 유형은? [교재 12장 12.2절 표 12-4]",
+    "a": "자아혐오 (Self-hating) 유형"
+  },
+  {
+    "q": "★☆☆ 노인의 퇴직 시 적응 유형 중 현실을 수용하고 긍정적으로 여가를 즐기며 자아를 통합하는 가장 바람직한 유형은? [교재 12장 12.2절 표 12-4]",
+    "a": "성숙 (Mature) 유형"
+  },
+  {
+    "q": "★☆☆ 미국사회복지교육협의회(CSWE)가 제시한 노인전문 사회복지사의 핵심 전문 지식 분야는? [교재 12장 12.2절 표 12-6]",
+    "a": "노화 변화 지식, 세대별 역사적 경험의 영향, 약리학 및 약물 복합 상호작용"
+  },
+  {
+    "q": "★☆☆ 1884년 영국 런던에 세계 최초의 인보관 '토인비 홀'을 설립한 부부 목사는? [교재 12장 12.1절 표 12-2]",
+    "a": "바넷 (C. Barnett) 목사 부부"
+  },
+  {
+    "q": "★☆☆ 1869년 영국 런던 자선조직협회(COS) 설립을 주도한 대표적 사회사업가이자 주택개량 운동가는? [교재 12장 12.1절 노인복지실천의 이해]",
+    "a": "옥타비아 힐 (Octavia Hill)"
+  },
+  {
+    "q": "★☆☆ 제도적 노인복지실천이 당사자가 억압적 구조를 깨닫고 스스로 권한을 강화하도록 돕기 위해 가장 중시하는 방법은? [교재 12장 12.3절 표 12-9]",
+    "a": "사회교육을 통한 비판적 자각 및 역량 강화 (Empowerment)"
+  },
+  {
+    "q": "★☆☆ 자선조직협회(COS)와 인보관운동 중 노인복지실천의 '제도적 접근'과 연결되는 역사적 뿌리는? [교재 12장 12.1절 표 12-2, 워크북 12장]",
+    "a": "인보관운동 (Settlement Movement)"
+  },
+  {
+    "q": "★☆☆ 자선조직협회(COS)와 인보관운동 중 노인복지실천의 '잔여적 접근'과 연결되는 역사적 뿌리는? [교재 12장 12.1절 표 12-2, 워크북 12장]",
+    "a": "자선조직협회 (COS)"
+  },
+  {
+    "q": "★☆☆ 노인사례관리의 대상자 문제영역 사정 중 '공적부조, 연금, 저축 등 재정 상태'를 확인하는 영역은? [교재 12장 12.2절 표 12-7]",
+    "a": "재정상태 (Financial Status)"
+  },
+  {
+    "q": "★☆☆ 노인복지실천 개입수준 중 1차적 개입수준에서 사회복지사가 수행하는 대표적 역할은? [교재 12장 12.2절 표 12-3, 워크북 12장]",
+    "a": "정보제공자, 자문가, 교사, 중개자, 옹호자"}
+    ];</script>
+
+<!-- ④ 프로그램 본체: 수정하지 마세요. -->
+<script>
+    var deck = [];
+    var cur = 0;
+    var swapTimer = null;
+
+    document.title = '제' + LECTURE.no + '장 - ' + LECTURE.title;
+    document.getElementById('page-title').textContent = '제' + LECTURE.no + '장 플래시카드';
+    document.getElementById('page-sub').textContent = LECTURE.title;
+
+    var cardEl = document.getElementById('flashcard');
+
+    function reduceMotion() {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+
+    /* ---------- 데이터 검사 ---------- */
+    function validateCards(data) {
+        var errors = [];
+        var valid = [];
+
+        if (!Array.isArray(data) || data.length === 0) {
+            errors.push({ tag: '전체', text: 'cards가 비어 있거나 배열([ ])이 아닙니다.' });
+            return { errors: errors, valid: valid };
+        }
+
+        data.forEach(function (item, i) {
+            var tag = (i + 1) + '번 카드';
+            var problems = [];
+            if (!item || typeof item !== 'object') {
+                problems.push('카드가 { } 형식이 아닙니다.');
+            } else {
+                if (typeof item.q !== 'string' || !item.q.trim()) problems.push('q(질문)가 없거나 비어 있습니다.');
+                if (typeof item.a !== 'string' || !item.a.trim()) problems.push('a(정답)가 없거나 비어 있습니다.');
+            }
+            if (problems.length) {
+                problems.forEach(function (t) { errors.push({ tag: tag, text: t }); });
+            } else {
+                valid.push(item);
+            }
+        });
+
+        return { errors: errors, valid: valid };
+    }
+
+    function showProblemScreen(opts) {
+        document.getElementById('card-screen').style.display = 'none';
+        document.getElementById('problem-screen').style.display = 'block';
+        document.getElementById('problem-title').textContent = opts.title;
+        document.getElementById('problem-summary').textContent = opts.summary;
+
+        var list = document.getElementById('problem-list');
+        list.innerHTML = '';
+        opts.items.forEach(function (it) {
+            var li = document.createElement('li');
+            var tag = document.createElement('span');
+            tag.className = 'tag';
+            tag.textContent = it.tag;
+            var txt = document.createElement('span');
+            txt.textContent = it.text;
+            li.appendChild(tag);
+            li.appendChild(txt);
+            list.appendChild(li);
+        });
+
+        var tips = document.getElementById('problem-tips');
+        tips.innerHTML = '';
+        if (opts.tips && opts.tips.length) {
+            tips.appendChild(document.createTextNode('자주 생기는 원인'));
+            var ul = document.createElement('ul');
+            opts.tips.forEach(function (t) {
+                var li = document.createElement('li');
+                li.textContent = t;
+                ul.appendChild(li);
+            });
+            tips.appendChild(ul);
+            tips.style.display = 'block';
+        } else {
+            tips.style.display = 'none';
+        }
+
+        var btn = document.getElementById('partial-btn');
+        if (opts.buttonText) {
+            btn.textContent = opts.buttonText;
+            btn.style.display = 'block';
+            btn.onclick = opts.onButton;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    function startDeck(list) {
+        deck = list;
+        cur = 0;
+        document.getElementById('problem-screen').style.display = 'none';
+        document.getElementById('card-screen').style.display = 'block';
+        render();
+    }
+
+    function init() {
+        // 데이터 문법 오류: ③ 블록이 아예 실행되지 못한 경우
+        if (typeof cards === 'undefined') {
+            var items = window.__dataErrors.map(function (er) {
+                return { tag: er.line ? ('약 ' + er.line + '줄') : '오류', text: er.msg };
+            });
+            if (!items.length) items.push({ tag: '오류', text: 'cards를 찾을 수 없습니다. const cards = [ ... ]; 형태가 맞는지 확인하세요.' });
+            showProblemScreen({
+                title: '⚠️ 카드 데이터를 읽지 못했어요',
+                summary: '데이터 부분에 문법 오류가 있어서 프로그램이 멈췄습니다. 아래 줄 근처를 확인하세요.',
+                items: items,
+                tips: [
+                    '문장 안에 큰따옴표(")가 들어 있음 → 작은따옴표(\')로 바꾸기',
+                    '카드와 카드 사이 쉼표(,) 빠짐, 또는 맨 끝의 ]; 가 지워짐',
+                    '문장 한가운데에서 줄이 바뀜 (한 문장은 한 줄로)',
+                    '붙여넣은 글에 // 가 포함되어 뒷부분이 주석 처리됨'
+                ]
+            });
+            return;
+        }
+
+        var result = validateCards(cards);
+
+        if (result.errors.length === 0) {
+            startDeck(result.valid);
+            return;
+        }
+
+        var total = Array.isArray(cards) ? cards.length : 0;
+        var badCount = total - result.valid.length;
+        showProblemScreen({
+            title: '⚠️ 고칠 곳이 ' + result.errors.length + '군데 있어요',
+            summary: badCount > 0
+                ? '전체 ' + total + '장 중 ' + badCount + '장에 문제가 있습니다. 데이터를 고치고 새로고침하세요.'
+                : '카드 데이터를 확인하고 새로고침하세요.',
+            items: result.errors,
+            tips: ['카드마다 q(질문)와 a(정답)가 모두 있어야 하고, 둘 다 글자(따옴표로 감싼 문장)여야 합니다'],
+            buttonText: result.valid.length > 0 ? '오류 없는 ' + result.valid.length + '장만 먼저 보기' : null,
+            onButton: function () { startDeck(result.valid); }
+        });
+    }
+
+    /* ---------- 카드 표시 ---------- */
+    // 질문 앞의 ★(중요도)와 끝의 [출처]를 따로 떼어 작은 표식으로 보여줍니다.
+    function parseQuestion(raw) {
+        var text = raw.trim();
+        var stars = '';
+        var src = '';
+        var m = text.match(/^([★☆]{1,5})\s*/);
+        if (m) { stars = m[1]; text = text.slice(m[0].length); }
+        var s = text.match(/\s*\[([^\]]{1,120})\]\s*$/);
+        if (s) { src = s[1]; text = text.slice(0, s.index); }
+        if (!text.trim()) { text = raw.trim(); stars = ''; src = ''; }
+        return { stars: stars, src: src, text: text };
+    }
+
+    function render() {
+        var c = deck[cur];
+        var p = parseQuestion(c.q);
+
+        document.getElementById('question').textContent = p.text;
+        document.getElementById('answer').textContent = c.a.trim();
+        document.getElementById('source').textContent = p.src ? '출처: ' + p.src : '';
+
+        var starsEl = document.getElementById('stars');
+        if (p.stars) {
+            var filled = (p.stars.match(/★/g) || []).length;
+            starsEl.textContent = p.stars;
+            starsEl.setAttribute('aria-label', '중요도 ' + p.stars.length + '개 중 ' + filled + '개');
+            starsEl.style.display = 'inline-block';
+        } else {
+            starsEl.style.display = 'none';
+        }
+
+        document.getElementById('current').textContent = cur + 1;
+        document.getElementById('total').textContent = deck.length;
+        document.getElementById('bar').style.width = ((cur + 1) / deck.length * 100) + '%';
+    }
+
+    function flip() { cardEl.classList.toggle('flipped'); }
+
+    function go(delta) {
+        cur = (cur + delta + deck.length) % deck.length;
+        clearTimeout(swapTimer);
+        if (cardEl.classList.contains('flipped') && !reduceMotion()) {
+            // 먼저 카드를 앞면으로 돌리고, 옆면이 되어 안 보일 때 내용을 바꿔서 다음 정답이 미리 비치지 않게 함
+            cardEl.classList.remove('flipped');
+            swapTimer = setTimeout(render, 300);
+        } else {
+            cardEl.classList.remove('flipped');
+            render();
+        }
+    }
+    function nextCard() { go(1); }
+    function prevCard() { go(-1); }
+
+    cardEl.addEventListener('click', flip);
+
+    document.addEventListener('keydown', function (e) {
+        if (document.getElementById('card-screen').style.display === 'none') return;
+        if (e.key === 'ArrowRight') { nextCard(); }
+        else if (e.key === 'ArrowLeft') { prevCard(); }
+        else if ((e.key === ' ' || e.key === 'Enter') && e.target.tagName !== 'BUTTON') { e.preventDefault(); flip(); }
+    });
+
+    // 스마트폰: 좌우로 밀어서 넘기기
+    var touchX = null, touchY = null;
+    cardEl.addEventListener('touchstart', function (e) {
+        touchX = e.touches[0].clientX;
+        touchY = e.touches[0].clientY;
+    }, { passive: true });
+    cardEl.addEventListener('touchend', function (e) {
+        if (touchX === null) return;
+        var dx = e.changedTouches[0].clientX - touchX;
+        var dy = e.changedTouches[0].clientY - touchY;
+        touchX = null;
+        if (Math.abs(dx) > 60 && Math.abs(dy) < 50) {
+            if (dx < 0) nextCard(); else prevCard();
+        }
+    }, { passive: true });
+
+    init();
+</script>
+</body>
+</html>

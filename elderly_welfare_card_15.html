@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>노인복지론 플래시카드</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* 눈이 편한 차분한 초록 계열 (index.html의 플래시카드 색과 맞춤) */
+    body {
+        font-family: 'Pretendard', sans-serif;
+        background: linear-gradient(135deg, #2f7d5b 0%, #1b4332 100%);
+        background-attachment: fixed;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .container { width: 100%; max-width: 850px; margin: auto; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+    .header { text-align: center; color: white; margin-bottom: 20px; }
+    .header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 6px; }
+    .header .sub { font-size: 1.05rem; font-weight: 600; opacity: 0.92; margin-bottom: 10px; word-break: keep-all; }
+    .header .count { font-size: 1.1rem; font-weight: 700; }
+    .progress { max-width: 340px; height: 6px; margin: 12px auto 0; background: rgba(255,255,255,0.25); border-radius: 3px; overflow: hidden; }
+    #bar { height: 100%; width: 0; background: white; border-radius: 3px; transition: width 0.3s; }
+
+    /* 카드 */
+    .stage { perspective: 1400px; margin: 12px 0; }
+    .card {
+        position: relative;
+        width: 100%;
+        height: min(460px, 60vh);
+        height: min(460px, 60dvh);
+        min-height: 320px;
+        cursor: pointer;
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .card.flipped { transform: rotateY(180deg); }
+    .card:focus-visible { outline: 3px solid #fde68a; outline-offset: 4px; }
+
+    .side {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 20px 26px 18px;
+        border-radius: 20px;
+        overflow-y: auto;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        word-break: keep-all;
+        white-space: pre-line;
+    }
+    .front { background: white; color: #1e293b; }
+    .back { background: #f0f7f2; color: #1b4332; transform: rotateY(180deg); }
+
+    .meta { display: flex; align-items: center; justify-content: space-between; min-height: 28px; white-space: normal; }
+    .chip { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; }
+    .chip-q { background: #f1f5f9; color: #475569; }
+    .chip-a { background: #cfe8d8; color: #1b4332; }
+    .stars { font-size: 0.95rem; font-weight: 800; color: #1f6b46; background: #e3f1e8; padding: 3px 10px; border-radius: 20px; display: none; }
+
+    /* 내용이 길어도 위쪽이 잘리지 않도록 margin:auto로 가운데 맞춤 */
+    .body { margin: auto; padding: 14px 0; text-align: center; font-size: 1.4rem; font-weight: 700; line-height: 1.55; }
+    .back .body { font-size: 1.55rem; font-weight: 800; }
+    .src { min-height: 1.2em; text-align: center; font-size: 0.85rem; color: #64748b; white-space: normal; }
+
+    .tip { text-align: center; color: rgba(255,255,255,0.85); font-size: 0.9rem; margin: 4px 0 14px; word-break: keep-all; }
+
+    .controls { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 12px; }
+    .btn { padding: 18px 10px; border: none; border-radius: 12px; background: white; color: #1f6b46; font-family: inherit; font-size: 1.05rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .btn:hover { background: #f1f5f9; transform: translateY(-2px); }
+    .btn:focus-visible { outline: 3px solid #fde68a; outline-offset: 2px; }
+
+    /* 데이터 검사 결과 화면 */
+    .problem-card { display: none; background: white; border-radius: 15px; padding: 28px; border-left: 6px solid #dc3545; box-shadow: 0 10px 30px rgba(0,0,0,0.25); color: #1e293b; }
+    .problem-card h2 { margin: 0 0 8px; font-size: 1.3rem; }
+    .problem-card .summary { margin: 0 0 16px; color: #55657d; line-height: 1.6; word-break: keep-all; }
+    .problem-list { list-style: none; margin: 0 0 8px; padding: 0; }
+    .problem-list li { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid #e0e7f1; line-height: 1.5; word-break: keep-all; }
+    .problem-list .tag { flex: none; min-width: 3.2rem; font-weight: 800; color: #dc3545; }
+    .problem-card .tips { margin: 12px 0 0; padding: 14px; background: #f3f6fa; border-radius: 10px; font-size: 0.92rem; line-height: 1.6; color: #2f3640; word-break: keep-all; }
+    .problem-card .tips ul { margin: 6px 0 0; padding-left: 20px; }
+    #partial-btn { width: 100%; padding: 16px; margin-top: 16px; border: none; border-radius: 10px; background: #2e7d5b; color: white; font-weight: bold; font-size: 1.05rem; cursor: pointer; font-family: inherit; }
+    #partial-btn:focus-visible { outline: 3px solid #1e293b; outline-offset: 2px; }
+
+    @media (max-width: 600px) {
+        body { padding: 14px; }
+        .header h1 { font-size: 1.6rem; }
+        .side { padding: 16px 18px 14px; }
+        .body { font-size: 1.2rem; }
+        .back .body { font-size: 1.3rem; }
+        .controls { grid-template-columns: 1fr 1fr; }
+        .controls .btn-list { grid-column: 1 / -1; }
+        .btn { padding: 16px 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .card, #bar, .btn { transition: none; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <div id="problem-screen" class="problem-card" role="alert">
+        <h2 id="problem-title"></h2>
+        <p id="problem-summary" class="summary"></p>
+        <ul id="problem-list" class="problem-list"></ul>
+        <div id="problem-tips" class="tips"></div>
+        <button id="partial-btn" type="button"></button>
+    </div>
+
+    <div id="card-screen">
+        <div class="header">
+            <h1 id="page-title">플래시카드</h1>
+            <p class="sub" id="page-sub"></p>
+            <p class="count"><span id="current">1</span> / <span id="total">0</span></p>
+            <div class="progress"><div id="bar"></div></div>
+        </div>
+
+        <div class="stage">
+            <div class="card" id="flashcard" role="button" tabindex="0" aria-label="카드 뒤집기">
+                <div class="side front">
+                    <div class="meta"><span class="chip chip-q">질문</span><span class="stars" id="stars"></span></div>
+                    <div class="body" id="question"></div>
+                    <div class="src" id="source"></div>
+                </div>
+                <div class="side back">
+                    <div class="meta"><span class="chip chip-a">정답</span></div>
+                    <div class="body" id="answer"></div>
+                    <div class="src"></div>
+                </div>
+            </div>
+        </div>
+
+        <p class="tip">카드를 누르면 정답이 보여요. 화살표 키나 좌우로 밀어서 넘길 수 있어요.</p>
+
+        <div class="controls">
+            <button class="btn" type="button" onclick="prevCard()">이전</button>
+            <button class="btn" type="button" onclick="nextCard()">다음</button>
+            <button class="btn btn-list" type="button" onclick="location.href='index.html'">목록으로 돌아가기</button>
+        </div>
+    </div>
+</div>
+
+<!-- ① 오류 수집용: 반드시 맨 위(②, ③보다 앞)에 두세요. 수정하지 마세요. -->
+<script>
+    window.__dataErrors = [];
+    window.addEventListener('error', function (e) {
+        window.__dataErrors.push({ msg: e.message, line: e.lineno });
+    });
+</script>
+
+<!-- ② 장 설정: 새 장을 만들 때 번호(1~15)와 제목만 고치세요. -->
+<script>
+    const LECTURE = { no: 15, title: "베이비붐 세대와 새로운 대응" };
+</script>
+
+<!-- ③ 카드 데이터: 노트북LM이 만든 const cards = [...]; 를 통째로 덮어쓰세요.
+     아래 2장은 화면 확인용 예시입니다. 덮어쓸 때 이 예시도 같이 지우세요.
+     카드마다 q(질문)와 a(정답)가 모두 있어야 합니다. -->
+<script>
+    const cards = [
+        {"q": "★★★ 전쟁 직후나 경제불황 극복 후 사회적 안정 전망 속에 합계출산율 3.0 이상이 지속된 인구 코호트를 일컫는 말은? [교재 15장 15.1절 베이비붐 세대의 이해, 워크북 15장, 기말 연습문제정리 15강]",
+    "a": "베이비붐 세대 (Baby Boom Generation)"
+  },
+  {
+    "q": "★★★ 베이비붐 시기에 태어난 사람들을 일컫는 말로, 미국에서 제2차 세계대전 이후 출생자를 가리키며 처음 사용된 용어는? [교재 15장 15.1절 베이비붐 세대의 이해, 워크북 15장]",
+    "a": "베이비부머 (Baby Boomer)"
+  },
+  {
+    "q": "★★★ 우리나라의 1차 베이비붐 세대의 출생 기간은? [교재 15장 15.1절 베이비붐 세대의 이해, 워크북 15장, 기말 연습문제정리 15강]",
+    "a": "1955년부터 1963년까지 (6·25전쟁 직후부터 산아제한정책 시행 이전까지)"
+  },
+  {
+    "q": "★★★ 일본의 1차 베이비붐 세대(1947~1949년생)를 거대한 인구 덩어리라는 뜻으로 부르는 명칭은? [교재 15장 15.1절 베이비붐 세대의 이해, 기말 연습문제정리 15강]",
+    "a": "단카이(団塊) 세대"
+  },
+  {
+    "q": "★★★ 베이비붐 세대가 낳은 자녀 세대로서, 부모 세대의 인구 급증이 메아리처럼 반향되었다는 의미를 지닌 세대 명칭은? [교재 15장 15.1절 베이비붐 세대의 이해, 워크북 15장]",
+    "a": "에코 세대 (Echo Generation: 일본 2차 1971~1974년생, 한국 3차 1979~1992년생)"
+  },
+  {
+    "q": "★★★ 우리나라 베이비붐 세대가 전통적 농경사회와 IT 중심의 현대사회를 연결하는 역할을 했다는 뜻에서 송호근(2013)이 명명한 용어는? [교재 15장 15.1절 베이비붐 세대의 이해, 워크북 15장]",
+    "a": "가교세대"
+  },
+  {
+    "q": "★★★ 부모를 부양하는 마지막 세대이면서 자녀에게는 부양받지 못하는 첫 세대로서 이중부담을 안고 있는 베이비붐 세대의 가족적 위치를 뜻하는 용어는? [교재 15장 15.1절 베이비붐 세대의 이해, 워크북 15장, 기말 연습문제정리 15강]",
+    "a": "낀 세대 / 샌드위치 세대"
+  },
+  {
+    "q": "★★★ 법정 정년퇴직 연령과 공적연금(국민연금) 수급 개시 연령 사이의 약 5년간 발생하는 소득 공백 기간을 뜻하는 용어는? [교재 15장 15.2절 베이비붐 세대의 현황, 정리하기+강의연습문제 15강]",
+    "a": "은퇴 크레바스 (Retirement Crevasse)"
+  },
+  {
+    "q": "★★★ 노후의 삶이 최소 생존(식사)뿐 아니라 인간으로서의 존엄과 문화·참여의 권리까지 보장되어야 함을 상징하는 두 표현은? [교재 15장 15.2절 베이비붐 세대의 현황, 강의록 15강]",
+    "a": "빵과 장미 (Bread and Roses)"
+  },
+  {
+    "q": "★★★ 노인을 무기력한 존재에서 벗어나게 했으나 노화를 개인 책임으로 돌리고 노인을 승자와 패자로 양분한다는 비판을 받는 신자유주의적 노년학 관점은? [교재 15장 15.2절 베이비붐 세대의 현황, 워크북 15장, 기말 연습문제정리 15강]",
+    "a": "성공적 노화 (Successful Aging)"
+  },
+  {
+    "q": "★★★ 지혜와 권리의식을 바탕으로 후배시민과 공동체를 돌보고, 사회구조와 관계의 변화를 이끌어가는 주체적인 노인은? [교재 15장 15.3절 표 15-3, 기말 연습문제정리 15강, 2015년·2016년·2018년 기출]",
+    "a": "선배시민 (Senior Citizen)"
+  },
+  {
+    "q": "★★★ 선배시민의 3대 핵심 구성 요소(행동 양식)는? [교재 15장 15.3절 노인복지의 새로운 대응 선배시민, 워크북 15장]",
+    "a": "자각(권리의식), 실천(주체적 행동), 연대(후배시민 및 공동체 협력)"
+  },
+  {
+    "q": "★★★ 선배시민 담론이 사유와 인식 차원에서 지향하는 태도로, 현상의 껍질을 벗겨 사회적 모순의 근본 원인을 파헤치는 자세는? [교재 15장 15.3절 표 15-3, 강의록 15강]",
+    "a": "본질을 묻는 노인 (Peeling)"
+  },
+  {
+    "q": "★★★ 노인복지관이 취약계층 수발 중심의 케어센터를 넘어 마을과 지역사회 공론장으로 나아가야 할 새로운 복지관 모델은? [교재 15장 15.3절 표 15-4, 워크북 15장]",
+    "a": "커뮤니티센터"
+  },
+  {
+    "q": "★★★ 시혜와 자선(도시락·연탄 배달)에 머무는 자선형 실천을 넘어, 법·제도 개선과 조례 제정을 통해 구조적 권리를 쟁취하는 실천은? [교재 15장 15.3절 표 15-5, 기말 연습문제정리 15강, 정리하기+강의연습문제 15강]",
+    "a": "권리형 실천"
+  },
+  {
+    "q": "★★★ 선배시민 실천의 세 가지 유형 중 학습동아리를 통해 자신을 성찰하고 질문과 토론으로 세상 읽기를 실천하는 유형은? [교재 15장 15.3절, 강의록 15강]",
+    "a": "소크라테스 유형 (나를 살펴보다)"
+  },
+  {
+    "q": "★★★ 선배시민 실천의 세 가지 유형 중 연대와 조직화를 통해 불합리한 법과 제도를 개혁하고 정책 모니터링을 실천하는 행동주의 유형은? [교재 15장 15.3절, 강의록 15강]",
+    "a": "은발의 표범 / 로자 파크스 유형 (함께 만들어 가다)"
+  },
+  {
+    "q": "★★☆ 선배시민 실천의 세 가지 유형 중 지역사회 문제 현장을 직접 과학적으로 조사·연구하여 이슈를 공론화하는 유형은? [교재 15장 15.3절, 강의록 15강]",
+    "a": "헬렌 켈러 유형 (주위를 둘러보다)"
+  },
+  {
+    "q": "★★☆ 베이비부머 여성이 부모세대보다 자아실현에 대한 관심은 높으나 정체성을 충분히 탐색하기 어려운 구조적 원인은? [교재 15장 15.1절 베이비붐 세대의 이해, 워크북 15장, 기말 연습문제정리 15강]",
+    "a": "가정 내 가부장적 성별 분업과 가사·황혼육아의 이중부담"
+  },
+  {
+    "q": "★★☆ 박길성 외(2005)가 제시한 한국 베이비붐 세대의 핵심 역사적 경험과 사회적 공간, 의식은? [교재 15장 15.1절 표 15-1]",
+    "a": "근대화 및 유신시대, 과밀과 경쟁의 장, 현실주의"
+  },
+  {
+    "q": "★★☆ 한국 베이비붐 세대가 치열한 경쟁과 급격한 사회변화 속에서 체득한 사고 및 행동양식 특성 3가지는? [교재 15장 15.1절 베이비붐 세대의 이해, 워크북 15장]",
+    "a": "도구주의적 사고, 관계지향성, 성취지향성 (결과 및 효율 중시)"
+  },
+  {
+    "q": "★★☆ 베이비붐 세대 남성이 은퇴 후 겪는 관계적·심리적 위기의 주된 원인은? [교재 15장 15.1절 베이비붐 세대의 이해, 워크북 15장]",
+    "a": "평생 일 중심 생활로 인한 가족과의 교류 부재 및 가장으로서의 경제적 지위 상실"
+  },
+  {
+    "q": "★★☆ 2022년 통계청 기준 우리나라 베이비붐 세대(1·2·3차 전체)의 인구 규모와 전 국민 대비 비율은? [교재 15장 15.2절 베이비붐 세대의 현황, 워크북 15장]",
+    "a": "약 1,636만 명 (전체 인구의 약 31.7%)"
+  },
+  {
+    "q": "★★☆ 한국은행이 2차 베이비부머(1964~1974년생)의 법적 정년 도달로 인해 2024~2034년 매년 하락할 것으로 전망한 연간 경제성장률 수치는? [교재 15장 15.2절 베이비붐 세대의 현황]",
+    "a": "연간 0.38%포인트"
+  },
+  {
+    "q": "★★☆ 2023년 통계청 조사에서 나타난 국민연금 수급자의 월 60만 원 미만 수급 비율은? [교재 15장 15.2절 베이비붐 세대의 현황, 워크북 15장]",
+    "a": "73.8% (월 100만 원 이상은 10.5%에 불과)"
+  },
+  {
+    "q": "★★☆ 미래에셋투자와연금센터 조사에서 2차 베이비부머의 총자산 중 부동산 비중과 거주주택 비율은? [교재 15장 15.2절 베이비붐 세대의 현황, 워크북 15장]",
+    "a": "부동산 비중 82.8% (그중 거주주택이 65.8%로 자산 유동성 취약)"
+  },
+  {
+    "q": "★★☆ 2차 베이비부머가 은퇴 후 거주지를 선택할 때 가장 중요하게 고려하는 3대 요소는? [교재 15장 15.2절 베이비붐 세대의 현황, 워크북 15장]",
+    "a": "교통 편의성, 생활시설 접근성, 병원 접근성 (도시 인프라 중시)"
+  },
+  {
+    "q": "★★☆ 베이비붐 세대의 노후를 노동시장 재진입과 생산적 복지 관점에서 지원하기 위해 2016년 설립된 대표적 서울시 기관은? [교재 15장 15.2절 베이비붐 세대의 현황, 워크북 15장]",
+    "a": "50플러스재단"
+  },
+  {
+    "q": "★★☆ 활동적 노화(Active Aging) 개념이 신체적 근로능력만 과도하게 강조할 때 초래할 수 있는 한계는? [교재 15장 15.2절 베이비붐 세대의 현황, 워크북 15장]",
+    "a": "신체적·심리적 기준에 미치지 못하는 노인의 자존감 저하 및 차별 초래"
+  },
+  {
+    "q": "★★☆ 성동50플러스센터가 기존 생산적 노화의 한계를 극복하고 노인을 주체적 시민으로 전환하기 위해 도입한 모델은? [교재 15장 15.2절 베이비붐 세대의 현황, 워크북 15장]",
+    "a": "선배시민 모델"
+  },
+  {
+    "q": "★★☆ 성동50플러스센터 노후준비지원센터가 체계화한 노후준비 5대 핵심 영역은? [교재 15장 15.2절 베이비붐 세대의 현황, 워크북 15장]",
+    "a": "재무, 건강, 일(활동), 관계, 여가"
+  },
+  {
+    "q": "★★☆ 노인을 아프고 쓸모없는 수동적 돌봄의 대상으로만 보며 체념과 숙명을 강요하는 전통적 노인 담론은? [교재 15장 15.3절 표 15-3, 워크북 15장]",
+    "a": "늙은이 담론"
+  },
+  {
+    "q": "★★☆ 노인을 지혜의 현자로 이상화하면서도 실질적 권한과 사회참여는 배제하는 모순을 지닌 전통적 노인 담론은? [교재 15장 15.3절 표 15-3, 워크북 15장]",
+    "a": "어르신 담론"
+  },
+  {
+    "q": "★★☆ 성공적 노화에 기반하여 자원을 바탕으로 자기계발과 활동적인 삶을 영위하는 신노년 담론은? [교재 15장 15.3절 표 15-3, 워크북 15장]",
+    "a": "액티브 시니어 (Active Senior) 담론"
+  },
+  {
+    "q": "★☆☆ 늙은이 담론과 선배시민 담론이 지향하는 각각의 사회복지 유형과 공간(집)은? [교재 15장 15.3절 표 15-3]",
+    "a": "늙은이: 잔여적 복지-연민의 집 / 선배시민: 제도적 복지-국민의 집"
+  },
+  {
+    "q": "★☆☆ 노인복지관이 커뮤니티센터로 전환될 때 사회복지사의 역할 정체성은 단순한 돌봄 제공자(케어러)에서 무엇으로 바뀌는가? [교재 15장 15.3절 표 15-4, 워크북 15장]",
+    "a": "매개자 (Mediator)"
+  },
+  {
+    "q": "★☆☆ 자선형 실천과 권리형 실천이 파악하는 사회문제의 근본 원인 차이는? [교재 15장 15.3절 표 15-5, 워크북 15장]",
+    "a": "자선형은 개인의 게으름과 무능력 / 권리형은 권력관계와 불평등한 제도·사회구조"
+  },
+  {
+    "q": "★☆☆ 선배시민 롤모델 중 생각하지 않는 죄(사유의 불능)로 악의 평범성을 드러내어 선배시민의 대척점에 선 인물은? [교재 15장 15.3절, 강의록 15강, 2018년 기출]",
+    "a": "아돌프 아이히만 (Adolf Eichmann)"
+  },
+  {
+    "q": "★☆☆ 선배시민의 철학적 뿌리 중 끊임없는 비판과 질문으로 아테네 공동체의 길을 물었던 인물은? [교재 15장 15.3절, 강의록 15강, 2018년 기출]",
+    "a": "소크라테스 (Socrates)"
+  },
+  {
+    "q": "★☆☆ 선배시민의 실천 철학 중 인식론적 호기심과 끊임없는 토론을 통한 프락시스(실천)를 주창한 교육사상가는? [교재 15장 15.3절, 강의록 15강, 2016년 기출]",
+    "a": "파울로 프레이리 (Paulo Freire)"
+  },
+  {
+    "q": "★☆☆ 선배시민 롤모델 중 말년까지 새로운 예술 창작의 길을 열며 열정을 발휘한 거장은? [교재 15장 15.3절, 강의록 15강, 2016년 기출]",
+    "a": "미켈란젤로 부오나로티 (Michelangelo)"
+  },
+  {
+    "q": "★☆☆ 미국의 베이비붐 세대를 구성하는 인구집단의 출생 연도 범위는? [교재 15장 15.1절 베이비붐 세대의 이해, 워크북 15장]",
+    "a": "1946년부터 1965년까지"
+  },
+  {
+    "q": "★☆☆ 우리나라의 2차 베이비붐 세대와 3차 베이비붐 세대(에코세대)의 출생 기간은? [교재 15장 15.1절 베이비붐 세대의 이해, 워크북 15장]",
+    "a": "2차: 1964~1974년생 (또는 1968~1974년생) / 3차: 1979~1992년생"
+  },
+  {
+    "q": "★☆☆ 중원노인종합복지관에서 복지국가(호랑이 마을)와 각자도생 시장사회(너구리 마을)를 비교 체험하도록 한 선배시민 교육 활동은? [강의록 15강]",
+    "a": "호랑이 마을과 너구리 마을 뻥튀기 생산 게임"
+  },
+  {
+    "q": "★☆☆ 중원노인종합복지관 디딤돌 동아리가 빗물받이 담배꽁초 무단투기를 막기 위해 고래를 그리며 전개한 캠페인 표어는? [강의록 15강]",
+    "a": "바다의 시작"
+  },
+  {
+    "q": "★☆☆ 중원노인종합복지관 그루터기 동아리 선배시민들이 수능 전날 수험생 청소년들에게 건넨 핵심 지지 메시지는? [강의록 15강]",
+    "a": "시험 성적과 상관없이 3년간 수고한 청소년들의 땀과 노고를 응원함"
+  },
+  {
+    "q": "★☆☆ 중원노인종합복지관 방송·기자단 선배시민들이 청년들과의 토론을 통해 확인한 저출생·만혼의 본질적 구조 원인은? [강의록 15강]",
+    "a": "주거 불안정과 일자리 경쟁, 사교육비 등 사회구조적 장벽"
+  },
+  {
+    "q": "★☆☆ 선배시민의 영문 명칭과 그 어원적 의미는? [교재 15장 15.3절 표 15-3, 워크북 15장]",
+    "a": "Senior(삶의 지혜와 경험이 풍부한 선배) + Citizen(시민적 권리와 의무를 가진 주체)"
+  },
+  {
+    "q": "★☆☆ 베이비붐 세대의 은퇴 후 주거 특성 중 보유 자산의 부동산 편중으로 인해 나타나는 경향은? [교재 15장 15.1절 표 15-2]",
+    "a": "부동산의 만족스러운 처분이 어려워 현 거주지를 그대로 유지할 가능성이 높음"
+  },
+  {
+    "q": "★☆☆ 선배시민 실천의 궁극적 목표는? [교재 15장 15.3절 노인복지의 새로운 대응 선배시민, 워크북 15장]",
+    "a": "돌봄의 수혜자에 머물지 않고 세대 간 연대를 통해 정의롭고 안전한 복지공동체를 구축하는 것"}
+    ];</script>
+
+<!-- ④ 프로그램 본체: 수정하지 마세요. -->
+<script>
+    var deck = [];
+    var cur = 0;
+    var swapTimer = null;
+
+    document.title = '제' + LECTURE.no + '장 - ' + LECTURE.title;
+    document.getElementById('page-title').textContent = '제' + LECTURE.no + '장 플래시카드';
+    document.getElementById('page-sub').textContent = LECTURE.title;
+
+    var cardEl = document.getElementById('flashcard');
+
+    function reduceMotion() {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+
+    /* ---------- 데이터 검사 ---------- */
+    function validateCards(data) {
+        var errors = [];
+        var valid = [];
+
+        if (!Array.isArray(data) || data.length === 0) {
+            errors.push({ tag: '전체', text: 'cards가 비어 있거나 배열([ ])이 아닙니다.' });
+            return { errors: errors, valid: valid };
+        }
+
+        data.forEach(function (item, i) {
+            var tag = (i + 1) + '번 카드';
+            var problems = [];
+            if (!item || typeof item !== 'object') {
+                problems.push('카드가 { } 형식이 아닙니다.');
+            } else {
+                if (typeof item.q !== 'string' || !item.q.trim()) problems.push('q(질문)가 없거나 비어 있습니다.');
+                if (typeof item.a !== 'string' || !item.a.trim()) problems.push('a(정답)가 없거나 비어 있습니다.');
+            }
+            if (problems.length) {
+                problems.forEach(function (t) { errors.push({ tag: tag, text: t }); });
+            } else {
+                valid.push(item);
+            }
+        });
+
+        return { errors: errors, valid: valid };
+    }
+
+    function showProblemScreen(opts) {
+        document.getElementById('card-screen').style.display = 'none';
+        document.getElementById('problem-screen').style.display = 'block';
+        document.getElementById('problem-title').textContent = opts.title;
+        document.getElementById('problem-summary').textContent = opts.summary;
+
+        var list = document.getElementById('problem-list');
+        list.innerHTML = '';
+        opts.items.forEach(function (it) {
+            var li = document.createElement('li');
+            var tag = document.createElement('span');
+            tag.className = 'tag';
+            tag.textContent = it.tag;
+            var txt = document.createElement('span');
+            txt.textContent = it.text;
+            li.appendChild(tag);
+            li.appendChild(txt);
+            list.appendChild(li);
+        });
+
+        var tips = document.getElementById('problem-tips');
+        tips.innerHTML = '';
+        if (opts.tips && opts.tips.length) {
+            tips.appendChild(document.createTextNode('자주 생기는 원인'));
+            var ul = document.createElement('ul');
+            opts.tips.forEach(function (t) {
+                var li = document.createElement('li');
+                li.textContent = t;
+                ul.appendChild(li);
+            });
+            tips.appendChild(ul);
+            tips.style.display = 'block';
+        } else {
+            tips.style.display = 'none';
+        }
+
+        var btn = document.getElementById('partial-btn');
+        if (opts.buttonText) {
+            btn.textContent = opts.buttonText;
+            btn.style.display = 'block';
+            btn.onclick = opts.onButton;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    function startDeck(list) {
+        deck = list;
+        cur = 0;
+        document.getElementById('problem-screen').style.display = 'none';
+        document.getElementById('card-screen').style.display = 'block';
+        render();
+    }
+
+    function init() {
+        // 데이터 문법 오류: ③ 블록이 아예 실행되지 못한 경우
+        if (typeof cards === 'undefined') {
+            var items = window.__dataErrors.map(function (er) {
+                return { tag: er.line ? ('약 ' + er.line + '줄') : '오류', text: er.msg };
+            });
+            if (!items.length) items.push({ tag: '오류', text: 'cards를 찾을 수 없습니다. const cards = [ ... ]; 형태가 맞는지 확인하세요.' });
+            showProblemScreen({
+                title: '⚠️ 카드 데이터를 읽지 못했어요',
+                summary: '데이터 부분에 문법 오류가 있어서 프로그램이 멈췄습니다. 아래 줄 근처를 확인하세요.',
+                items: items,
+                tips: [
+                    '문장 안에 큰따옴표(")가 들어 있음 → 작은따옴표(\')로 바꾸기',
+                    '카드와 카드 사이 쉼표(,) 빠짐, 또는 맨 끝의 ]; 가 지워짐',
+                    '문장 한가운데에서 줄이 바뀜 (한 문장은 한 줄로)',
+                    '붙여넣은 글에 // 가 포함되어 뒷부분이 주석 처리됨'
+                ]
+            });
+            return;
+        }
+
+        var result = validateCards(cards);
+
+        if (result.errors.length === 0) {
+            startDeck(result.valid);
+            return;
+        }
+
+        var total = Array.isArray(cards) ? cards.length : 0;
+        var badCount = total - result.valid.length;
+        showProblemScreen({
+            title: '⚠️ 고칠 곳이 ' + result.errors.length + '군데 있어요',
+            summary: badCount > 0
+                ? '전체 ' + total + '장 중 ' + badCount + '장에 문제가 있습니다. 데이터를 고치고 새로고침하세요.'
+                : '카드 데이터를 확인하고 새로고침하세요.',
+            items: result.errors,
+            tips: ['카드마다 q(질문)와 a(정답)가 모두 있어야 하고, 둘 다 글자(따옴표로 감싼 문장)여야 합니다'],
+            buttonText: result.valid.length > 0 ? '오류 없는 ' + result.valid.length + '장만 먼저 보기' : null,
+            onButton: function () { startDeck(result.valid); }
+        });
+    }
+
+    /* ---------- 카드 표시 ---------- */
+    // 질문 앞의 ★(중요도)와 끝의 [출처]를 따로 떼어 작은 표식으로 보여줍니다.
+    function parseQuestion(raw) {
+        var text = raw.trim();
+        var stars = '';
+        var src = '';
+        var m = text.match(/^([★☆]{1,5})\s*/);
+        if (m) { stars = m[1]; text = text.slice(m[0].length); }
+        var s = text.match(/\s*\[([^\]]{1,120})\]\s*$/);
+        if (s) { src = s[1]; text = text.slice(0, s.index); }
+        if (!text.trim()) { text = raw.trim(); stars = ''; src = ''; }
+        return { stars: stars, src: src, text: text };
+    }
+
+    function render() {
+        var c = deck[cur];
+        var p = parseQuestion(c.q);
+
+        document.getElementById('question').textContent = p.text;
+        document.getElementById('answer').textContent = c.a.trim();
+        document.getElementById('source').textContent = p.src ? '출처: ' + p.src : '';
+
+        var starsEl = document.getElementById('stars');
+        if (p.stars) {
+            var filled = (p.stars.match(/★/g) || []).length;
+            starsEl.textContent = p.stars;
+            starsEl.setAttribute('aria-label', '중요도 ' + p.stars.length + '개 중 ' + filled + '개');
+            starsEl.style.display = 'inline-block';
+        } else {
+            starsEl.style.display = 'none';
+        }
+
+        document.getElementById('current').textContent = cur + 1;
+        document.getElementById('total').textContent = deck.length;
+        document.getElementById('bar').style.width = ((cur + 1) / deck.length * 100) + '%';
+    }
+
+    function flip() { cardEl.classList.toggle('flipped'); }
+
+    function go(delta) {
+        cur = (cur + delta + deck.length) % deck.length;
+        clearTimeout(swapTimer);
+        if (cardEl.classList.contains('flipped') && !reduceMotion()) {
+            // 먼저 카드를 앞면으로 돌리고, 옆면이 되어 안 보일 때 내용을 바꿔서 다음 정답이 미리 비치지 않게 함
+            cardEl.classList.remove('flipped');
+            swapTimer = setTimeout(render, 300);
+        } else {
+            cardEl.classList.remove('flipped');
+            render();
+        }
+    }
+    function nextCard() { go(1); }
+    function prevCard() { go(-1); }
+
+    cardEl.addEventListener('click', flip);
+
+    document.addEventListener('keydown', function (e) {
+        if (document.getElementById('card-screen').style.display === 'none') return;
+        if (e.key === 'ArrowRight') { nextCard(); }
+        else if (e.key === 'ArrowLeft') { prevCard(); }
+        else if ((e.key === ' ' || e.key === 'Enter') && e.target.tagName !== 'BUTTON') { e.preventDefault(); flip(); }
+    });
+
+    // 스마트폰: 좌우로 밀어서 넘기기
+    var touchX = null, touchY = null;
+    cardEl.addEventListener('touchstart', function (e) {
+        touchX = e.touches[0].clientX;
+        touchY = e.touches[0].clientY;
+    }, { passive: true });
+    cardEl.addEventListener('touchend', function (e) {
+        if (touchX === null) return;
+        var dx = e.changedTouches[0].clientX - touchX;
+        var dy = e.changedTouches[0].clientY - touchY;
+        touchX = null;
+        if (Math.abs(dx) > 60 && Math.abs(dy) < 50) {
+            if (dx < 0) nextCard(); else prevCard();
+        }
+    }, { passive: true });
+
+    init();
+</script>
+</body>
+</html>

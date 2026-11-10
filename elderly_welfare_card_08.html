@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>노인복지론 플래시카드</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* 눈이 편한 차분한 초록 계열 (index.html의 플래시카드 색과 맞춤) */
+    body {
+        font-family: 'Pretendard', sans-serif;
+        background: linear-gradient(135deg, #2f7d5b 0%, #1b4332 100%);
+        background-attachment: fixed;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .container { width: 100%; max-width: 850px; margin: auto; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+    .header { text-align: center; color: white; margin-bottom: 20px; }
+    .header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 6px; }
+    .header .sub { font-size: 1.05rem; font-weight: 600; opacity: 0.92; margin-bottom: 10px; word-break: keep-all; }
+    .header .count { font-size: 1.1rem; font-weight: 700; }
+    .progress { max-width: 340px; height: 6px; margin: 12px auto 0; background: rgba(255,255,255,0.25); border-radius: 3px; overflow: hidden; }
+    #bar { height: 100%; width: 0; background: white; border-radius: 3px; transition: width 0.3s; }
+
+    /* 카드 */
+    .stage { perspective: 1400px; margin: 12px 0; }
+    .card {
+        position: relative;
+        width: 100%;
+        height: min(460px, 60vh);
+        height: min(460px, 60dvh);
+        min-height: 320px;
+        cursor: pointer;
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .card.flipped { transform: rotateY(180deg); }
+    .card:focus-visible { outline: 3px solid #fde68a; outline-offset: 4px; }
+
+    .side {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 20px 26px 18px;
+        border-radius: 20px;
+        overflow-y: auto;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        word-break: keep-all;
+        white-space: pre-line;
+    }
+    .front { background: white; color: #1e293b; }
+    .back { background: #f0f7f2; color: #1b4332; transform: rotateY(180deg); }
+
+    .meta { display: flex; align-items: center; justify-content: space-between; min-height: 28px; white-space: normal; }
+    .chip { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; }
+    .chip-q { background: #f1f5f9; color: #475569; }
+    .chip-a { background: #cfe8d8; color: #1b4332; }
+    .stars { font-size: 0.95rem; font-weight: 800; color: #1f6b46; background: #e3f1e8; padding: 3px 10px; border-radius: 20px; display: none; }
+
+    /* 내용이 길어도 위쪽이 잘리지 않도록 margin:auto로 가운데 맞춤 */
+    .body { margin: auto; padding: 14px 0; text-align: center; font-size: 1.4rem; font-weight: 700; line-height: 1.55; }
+    .back .body { font-size: 1.55rem; font-weight: 800; }
+    .src { min-height: 1.2em; text-align: center; font-size: 0.85rem; color: #64748b; white-space: normal; }
+
+    .tip { text-align: center; color: rgba(255,255,255,0.85); font-size: 0.9rem; margin: 4px 0 14px; word-break: keep-all; }
+
+    .controls { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 12px; }
+    .btn { padding: 18px 10px; border: none; border-radius: 12px; background: white; color: #1f6b46; font-family: inherit; font-size: 1.05rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .btn:hover { background: #f1f5f9; transform: translateY(-2px); }
+    .btn:focus-visible { outline: 3px solid #fde68a; outline-offset: 2px; }
+
+    /* 데이터 검사 결과 화면 */
+    .problem-card { display: none; background: white; border-radius: 15px; padding: 28px; border-left: 6px solid #dc3545; box-shadow: 0 10px 30px rgba(0,0,0,0.25); color: #1e293b; }
+    .problem-card h2 { margin: 0 0 8px; font-size: 1.3rem; }
+    .problem-card .summary { margin: 0 0 16px; color: #55657d; line-height: 1.6; word-break: keep-all; }
+    .problem-list { list-style: none; margin: 0 0 8px; padding: 0; }
+    .problem-list li { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid #e0e7f1; line-height: 1.5; word-break: keep-all; }
+    .problem-list .tag { flex: none; min-width: 3.2rem; font-weight: 800; color: #dc3545; }
+    .problem-card .tips { margin: 12px 0 0; padding: 14px; background: #f3f6fa; border-radius: 10px; font-size: 0.92rem; line-height: 1.6; color: #2f3640; word-break: keep-all; }
+    .problem-card .tips ul { margin: 6px 0 0; padding-left: 20px; }
+    #partial-btn { width: 100%; padding: 16px; margin-top: 16px; border: none; border-radius: 10px; background: #2e7d5b; color: white; font-weight: bold; font-size: 1.05rem; cursor: pointer; font-family: inherit; }
+    #partial-btn:focus-visible { outline: 3px solid #1e293b; outline-offset: 2px; }
+
+    @media (max-width: 600px) {
+        body { padding: 14px; }
+        .header h1 { font-size: 1.6rem; }
+        .side { padding: 16px 18px 14px; }
+        .body { font-size: 1.2rem; }
+        .back .body { font-size: 1.3rem; }
+        .controls { grid-template-columns: 1fr 1fr; }
+        .controls .btn-list { grid-column: 1 / -1; }
+        .btn { padding: 16px 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .card, #bar, .btn { transition: none; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <div id="problem-screen" class="problem-card" role="alert">
+        <h2 id="problem-title"></h2>
+        <p id="problem-summary" class="summary"></p>
+        <ul id="problem-list" class="problem-list"></ul>
+        <div id="problem-tips" class="tips"></div>
+        <button id="partial-btn" type="button"></button>
+    </div>
+
+    <div id="card-screen">
+        <div class="header">
+            <h1 id="page-title">플래시카드</h1>
+            <p class="sub" id="page-sub"></p>
+            <p class="count"><span id="current">1</span> / <span id="total">0</span></p>
+            <div class="progress"><div id="bar"></div></div>
+        </div>
+
+        <div class="stage">
+            <div class="card" id="flashcard" role="button" tabindex="0" aria-label="카드 뒤집기">
+                <div class="side front">
+                    <div class="meta"><span class="chip chip-q">질문</span><span class="stars" id="stars"></span></div>
+                    <div class="body" id="question"></div>
+                    <div class="src" id="source"></div>
+                </div>
+                <div class="side back">
+                    <div class="meta"><span class="chip chip-a">정답</span></div>
+                    <div class="body" id="answer"></div>
+                    <div class="src"></div>
+                </div>
+            </div>
+        </div>
+
+        <p class="tip">카드를 누르면 정답이 보여요. 화살표 키나 좌우로 밀어서 넘길 수 있어요.</p>
+
+        <div class="controls">
+            <button class="btn" type="button" onclick="prevCard()">이전</button>
+            <button class="btn" type="button" onclick="nextCard()">다음</button>
+            <button class="btn btn-list" type="button" onclick="location.href='index.html'">목록으로 돌아가기</button>
+        </div>
+    </div>
+</div>
+
+<!-- ① 오류 수집용: 반드시 맨 위(②, ③보다 앞)에 두세요. 수정하지 마세요. -->
+<script>
+    window.__dataErrors = [];
+    window.addEventListener('error', function (e) {
+        window.__dataErrors.push({ msg: e.message, line: e.lineno });
+    });
+</script>
+
+<!-- ② 장 설정: 새 장을 만들 때 번호(1~15)와 제목만 고치세요. -->
+<script>
+    const LECTURE = { no: 8, title: "노인의료보장정책" };
+</script>
+
+<!-- ③ 카드 데이터: 노트북LM이 만든 const cards = [...]; 를 통째로 덮어쓰세요.
+     아래 2장은 화면 확인용 예시입니다. 덮어쓸 때 이 예시도 같이 지우세요.
+     카드마다 q(질문)와 a(정답)가 모두 있어야 합니다. -->
+<script>
+    const cards = [
+        {"q": "★★★ 우리나라 국민건강보험이 채택하고 있는 의료보장 유형으로, 단일 공적 보험자가 전 국민을 통합 관리·운영하는 방식은? [교재 8장 8.1절 노인의료보장정책의 이해, 기말 연습문제정리 8강, 2019년 기출]",
+    "a": "국민건강보험(NHI) 방식"
+  },
+  {
+    "q": "★★★ 영국, 스웨덴 등에서 일반 조세를 재원으로 정부가 직접 모든 국민에게 무상의료를 제공하는 의료보장 체계는? [교재 8장 8.1절 노인의료보장정책의 이해, 워크북 8장, 2017년 기출]",
+    "a": "국민보건서비스(NHS)"
+  },
+  {
+    "q": "★★★ 미국처럼 민간 영리보험회사가 주도하여 의료보장을 제공하는 의료보장 방식은? [교재 8장 8.1절 노인의료보장정책의 이해, 워크북 8장]",
+    "a": "민간보험방식 (소비자주권모형, CSM)"
+  },
+  {
+    "q": "★★★ 역선택을 방지하고 위험을 공동 분담하기 위해 일정한 법적 요건을 갖춘 국민이면 누구나 가입해야 하는 국민건강보험의 원칙은? [교재 8장 8.2절 노인의료보장제도, 워크북 8장, 기말 연습문제정리 8강]",
+    "a": "가입의 보편성과 의무화의 원칙"
+  },
+  {
+    "q": "★★★ 소득 수준과 경제적 부담 능력에 따라 보험료를 차등 부과하는 국민건강보험의 운영 원칙은? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "재원부담의 형평성 원칙"
+  },
+  {
+    "q": "★★★ 보험료 납부 금액의 많고 적음과 관계없이 질병 발생 시 모든 가입자에게 동일한 수준의 의료를 제공하는 원칙은? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "급여의 균등성 원칙"
+  },
+  {
+    "q": "★★★ 국민건강보험이 수행하는 3대 주요 기능은? [교재 8장 8.2절 노인의료보장제도, 워크북 8장, 기말 연습문제정리 8강]",
+    "a": "의료보장 기능, 사회연대 기능, 소득재분배 기능"
+  },
+  {
+    "q": "★★★ 국민건강보험 급여 형태 중 진료·치료 등 의료서비스로 직접 제공되는 '현물급여' 2가지는? [교재 8장 8.2절 노인의료보장제도, 워크북 8장, 기말 연습문제정리 8강, 2015년 기출]",
+    "a": "요양급여 & 건강검진(건강검진비)"
+  },
+  {
+    "q": "★★★ 우리나라에서 생활유지 능력이 없거나 저소득인 취약계층 노인에게 조세 재원으로 의료를 제공하는 공공부조제도는? [교재 8장 8.2절 노인의료보장제도, 2018년 기출, 2019년 기출]",
+    "a": "의료급여"
+  },
+  {
+    "q": "★★★ 과도한 의료비 부담을 줄이기 위해 연간 법정 본인부담금 총액이 개인별 소득 상한액을 초과할 때 초과분을 공단이 환급해 주는 제도는? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "본인부담액 상한제"
+  },
+  {
+    "q": "★★★ 아서 프랭크의 논의에서 의사가 주체가 되어 객관적 측정과 질병 완치를 목표로 몸을 환원하는 개념은? [교재 8장 8.3절 노인의료정책 상품인가, 권리인가, 기말 연습문제정리 8강]",
+    "a": "질환(disease)"
+  },
+  {
+    "q": "★★★ 아서 프랭크의 논의에서 환자가 주체가 되어 아픈 몸과 함께 살아가는 삶의 경험과 성찰을 의미하는 개념은? [교재 8장 8.3절 노인의료정책 상품인가, 권리인가, 기말 연습문제정리 8강]",
+    "a": "질병(illness)"
+  },
+  {
+    "q": "★★★ 의료를 시장 상품으로 인식할 때 나타나는 사후치료 편중과 달리, 의료를 시민 권리로 인식할 때 중점을 두는 정책 방향은? [교재 8장 8.3절 노인의료정책 상품인가, 권리인가, 워크북 8장, 2017년 기출]",
+    "a": "탈상품화된 보편적 접근권 보장 및 사전예방 중심"
+  },
+  {
+    "q": "★★★ 우리나라에서 최초로 500인 이상 대규모 사업장 노동자를 대상으로 강제 의료보험이 시행된 연도는? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "1977년"
+  },
+  {
+    "q": "★★★ 1977년 첫 시행 이후 농어촌과 도시지역으로 순차 확대되어 '전 국민 의료보험'을 달성한 연도는? [교재 8장 8.2절 노인의료보장제도]",
+    "a": "1989년 (12년 만에 완성)"
+  },
+  {
+    "q": "★★★ 분절되어 있던 직장 및 지역 의료보험조합을 단일한 공적 보험자인 '국민건강보험공단'으로 통합 출범시킨 연도는? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "2000년"
+  },
+  {
+    "q": "★★★ 매슬로(Maslow)의 5단계 욕구 위계 중 질병과 신체적 위협으로부터 보호받고자 하는 '의료보장'이 속하는 욕구 범주는? [교재 8장 8.1절 노인의료보장정책의 이해]",
+    "a": "안전의 욕구"
+  },
+  {
+    "q": "★★☆ 노인의료보장정책의 4대 필요성은? [교재 8장 8.1절 노인의료보장정책의 이해, 워크북 8장, 2016년 기출]",
+    "a": "삶의 질 향상, 경제적 부담 완화, 불평등 완화와 위험 분산, 사회통합 촉진"
+  },
+  {
+    "q": "★★☆ 독일, 프랑스 등에서 독립된 다수의 자치적 의료보험조합이 운영하는 전통적인 의료보장 체계는? [교재 8장 8.1절 노인의료보장정책의 이해]",
+    "a": "사회보험(SHI) 방식"
+  },
+  {
+    "q": "★★☆ 우리나라 의료보험 도입이 상대적으로 소득이 안정된 대기업 정규직 근로자부터 시작되어 붙여진 비판적 평가는? [교재 8장 8.2절 노인의료보장제도]",
+    "a": "역진적 도입"
+  },
+  {
+    "q": "★★☆ 국민건강보험 가입자 중 사업장의 근로자·사용자, 공무원·교직원 및 그 피부양자로 구성된 가입자 유형은? [교재 8장 8.2절 노인의료보장제도]",
+    "a": "직장가입자"
+  },
+  {
+    "q": "★★☆ 직장가입자와 피부양자를 제외한 모든 국민(자영업자, 은퇴자 등)으로 구성되는 건강보험 가입자 유형은? [교재 8장 8.2절 노인의료보장제도]",
+    "a": "지역가입자"
+  },
+  {
+    "q": "★★☆ 직장가입자의 건강보험료는 노사가 50%씩 절반 분담하지만, 지역가입자는 세대 단위로 무엇을 합산하여 부과하는가? [교재 8장 8.2절 노인의료보장제도]",
+    "a": "소득과 재산(주택, 토지 등) 부과점수"
+  },
+  {
+    "q": "★★☆ 현행 국민건강보험에서 65세 이상 노인이 동네 의원급 외래 진료 시 요양급여비용 총액이 15,000원 이하일 때 부담하는 정액 본인부담금은? [교재 8장 8.2절 노인의료보장제도]",
+    "a": "1,500원"
+  },
+  {
+    "q": "★★☆ 1977년 12월 「생활보호법」에서 분리되어 공공부조 의료보호 체계로 독립 제정된 법률은? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "「의료보호법」 (현 「의료급여법」)"
+  },
+  {
+    "q": "★★☆ 의료급여 1종 수급권자와 2종 수급권자가 병원에 입원할 때 법정 본인부담률은 각각 얼마인가? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "1종: 0%(본인부담 없음) / 2종: 10%"
+  },
+  {
+    "q": "★★☆ 의료급여 수급권자가 상급 의료기관을 이용할 때 반드시 지켜야 하는 법정 단계적 절차는? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "1차(의원·보건소) → 2차(병원·종합병원) → 3차(상급종합병원) 단계별 의뢰"
+  },
+  {
+    "q": "★★☆ 연간 의료급여 상한일수(365일)를 초과한 수급자가 특정 1차 의료기관을 전담 지정하여 이용하는 제도는? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "선택의료급여기관제도"
+  },
+  {
+    "q": "★★☆ 60세 이상 저소득층 노인을 대상으로 하는 '무릎관절증 치료 지원'의 수술비 본인부담 실비 지원 한도는? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "한쪽 무릎당 최대 120만 원 한도"
+  },
+  {
+    "q": "★★☆ 65세 이상 노인의 치아건강 지원에서 임플란트 건강보험 적용 개수 한도는? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "평생 2개까지 (본인부담률 30% 적용)"
+  },
+  {
+    "q": "★★☆ 60세 이상 모든 노인을 대상으로 보건소 및 치매안심센터에서 무료로 실시하는 1단계 검사는? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "치매선별검사"
+  },
+  {
+    "q": "★★☆ 영국의 NHS가 치매의 조기 발견 및 사전예방에 유리한 구조적 요인 2가지는? [교재 8장 8.3절 노인의료정책 상품인가, 권리인가]",
+    "a": "본인부담금 없는 무상의료 & 1차 의료기관 일반의(GP) 주치의의 지속적 병력 관리"
+  },
+  {
+    "q": "★★☆ 의료행위와 검사, 처치 건수마다 진료비를 산정하여 과잉 진료와 사후치료 편중을 유발하는 지불제도는? [교재 8장 8.3절 노인의료정책 상품인가, 권리인가]",
+    "a": "행위별 수가제(Fee-for-service)"
+  },
+  {
+    "q": "★★☆ 조한진희의 저서에서 제시된 개념으로, 질병을 개인의 탓으로 자책하지 않고 누구나 편안히 돌봄과 쉼을 누릴 수 있어야 한다는 권리는? [강의록 8강]",
+    "a": "질병권 (아플 권리)"
+  },
+  {
+    "q": "★☆☆ 국민건강보험과 노인의료보장의 헌법적 뿌리가 되는 헌법 조항 2가지는? [교재 8장 8.2절 노인의료보장제도]",
+    "a": "헌법 제10조(행복추구권) & 제34조(인간다운 생활을 할 권리)"
+  },
+  {
+    "q": "★☆☆ 우리나라 의료보장 관련 법체계 중 보편적 사회보험법과 공공부조법에 해당하는 기본 법률 2가지는? [교재 8장 8.1절 노인의료보장정책의 이해]",
+    "a": "「국민건강보험법」 & 「의료급여법」"
+  },
+  {
+    "q": "★☆☆ 2011년 국민건강보험공단으로 일원화된 사회보험 징수 통합 대상 4대 사회보험은? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "건강보험, 국민연금, 고용보험, 산업재해보상보험"
+  },
+  {
+    "q": "★☆☆ 2015년 환자 간병 부담 경감을 위해 건강보험 입원 급여로 도입된 간호 서비스는? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "간호·간병 통합서비스"
+  },
+  {
+    "q": "★☆☆ 2001년 법 개정으로 종전의 '의료보호'에서 변경된 공공부조 의료보장의 법적 명칭은? [교재 8장 8.2절 노인의료보장제도, 2019년 기출]",
+    "a": "의료급여"
+  },
+  {
+    "q": "★☆☆ 「의료급여법」상 1종 수급권자와 달리 근로능력이 있는 가구원으로 구성된 저소득 기초생활수급자에게 적용되는 자격은? [교재 8장 8.2절 노인의료보장제도]",
+    "a": "의료급여 2종"
+  },
+  {
+    "q": "★☆☆ 의료급여 수급권자가 의뢰 절차 없이 곧바로 3차 상급종합병원을 이용할 경우 진료비 부담 원칙은? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "진료비 전액(100%) 본인 부담"
+  },
+  {
+    "q": "★☆☆ 2025년부터 의료급여에 도입된 제도로, 외래진료 365회 초과 시 본인부담을 대폭 상향하는 제도는? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "본인부담 차등제도"
+  },
+  {
+    "q": "★☆☆ 「노인복지법」 제27조에 따라 65세 이상 노인에게 일반건강진단을 실시하는 주체는? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "지방자치단체 (보건소 등)"
+  },
+  {
+    "q": "★☆☆ 치매검진 지원사업에서 1단계 선별검사 결과 인지기능 저하가 의심될 때 실시하는 정밀 검진 주기는? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "2년 주기"
+  },
+  {
+    "q": "★☆☆ 치아건강 지원에서 틀니 시술 후 무상으로 진찰료만 부담하도록 정한 사후 유지관리 기간은? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "시술 후 3개월간 (최대 6회)"
+  },
+  {
+    "q": "★☆☆ 다큐멘터리 〈식코(Sicko)〉가 고발한 시장 중심 민간의료보험 국가 미국의 대표적 의료 모형은? [교재 8장 8.3절 노인의료정책 상품인가, 권리인가, 강의록 8강]",
+    "a": "민간보험방식 (소비자주권모형, CSM)"
+  },
+  {
+    "q": "★☆☆ 교재 8.3절에서 강조한 문장으로, 질병 치료가 자연과학의 영역이라면 질병을 다루는 방식은 어느 영역에 속하는가? [교재 8장 8.3절 노인의료정책 상품인가, 권리인가, 강의록 8강]",
+    "a": "사회과학의 영역"
+  },
+  {
+    "q": "★☆☆ 국민건강보험 요양급여를 본인이 사전에 지불하고 사후에 금전으로 환급받는 급여 유형은? [교재 8장 8.2절 노인의료보장제도, 기말 연습문제정리 8강]",
+    "a": "현금급여 (요양비 등)"
+  },
+  {
+    "q": "★☆☆ 노인의료보장제도 중 노인의 특수 질환을 지원하는 개별 건강지원사업(안검진, 무릎, 치아, 치매 등)의 총칭은? [교재 8장 8.2절 노인의료보장제도, 기말 연습문제정리 8강]",
+    "a": "노인건강지원서비스"
+  },
+  {
+    "q": "★☆☆ 우리나라에서 1999년 제정되어 분절된 수백 개의 의료보험조합을 단일 공단으로 통합하도록 규정한 법률은? [교재 8장 8.2절 노인의료보장제도, 워크북 8장]",
+    "a": "「국민건강보험법」"}
+    ];</script>
+
+<!-- ④ 프로그램 본체: 수정하지 마세요. -->
+<script>
+    var deck = [];
+    var cur = 0;
+    var swapTimer = null;
+
+    document.title = '제' + LECTURE.no + '장 - ' + LECTURE.title;
+    document.getElementById('page-title').textContent = '제' + LECTURE.no + '장 플래시카드';
+    document.getElementById('page-sub').textContent = LECTURE.title;
+
+    var cardEl = document.getElementById('flashcard');
+
+    function reduceMotion() {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+
+    /* ---------- 데이터 검사 ---------- */
+    function validateCards(data) {
+        var errors = [];
+        var valid = [];
+
+        if (!Array.isArray(data) || data.length === 0) {
+            errors.push({ tag: '전체', text: 'cards가 비어 있거나 배열([ ])이 아닙니다.' });
+            return { errors: errors, valid: valid };
+        }
+
+        data.forEach(function (item, i) {
+            var tag = (i + 1) + '번 카드';
+            var problems = [];
+            if (!item || typeof item !== 'object') {
+                problems.push('카드가 { } 형식이 아닙니다.');
+            } else {
+                if (typeof item.q !== 'string' || !item.q.trim()) problems.push('q(질문)가 없거나 비어 있습니다.');
+                if (typeof item.a !== 'string' || !item.a.trim()) problems.push('a(정답)가 없거나 비어 있습니다.');
+            }
+            if (problems.length) {
+                problems.forEach(function (t) { errors.push({ tag: tag, text: t }); });
+            } else {
+                valid.push(item);
+            }
+        });
+
+        return { errors: errors, valid: valid };
+    }
+
+    function showProblemScreen(opts) {
+        document.getElementById('card-screen').style.display = 'none';
+        document.getElementById('problem-screen').style.display = 'block';
+        document.getElementById('problem-title').textContent = opts.title;
+        document.getElementById('problem-summary').textContent = opts.summary;
+
+        var list = document.getElementById('problem-list');
+        list.innerHTML = '';
+        opts.items.forEach(function (it) {
+            var li = document.createElement('li');
+            var tag = document.createElement('span');
+            tag.className = 'tag';
+            tag.textContent = it.tag;
+            var txt = document.createElement('span');
+            txt.textContent = it.text;
+            li.appendChild(tag);
+            li.appendChild(txt);
+            list.appendChild(li);
+        });
+
+        var tips = document.getElementById('problem-tips');
+        tips.innerHTML = '';
+        if (opts.tips && opts.tips.length) {
+            tips.appendChild(document.createTextNode('자주 생기는 원인'));
+            var ul = document.createElement('ul');
+            opts.tips.forEach(function (t) {
+                var li = document.createElement('li');
+                li.textContent = t;
+                ul.appendChild(li);
+            });
+            tips.appendChild(ul);
+            tips.style.display = 'block';
+        } else {
+            tips.style.display = 'none';
+        }
+
+        var btn = document.getElementById('partial-btn');
+        if (opts.buttonText) {
+            btn.textContent = opts.buttonText;
+            btn.style.display = 'block';
+            btn.onclick = opts.onButton;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    function startDeck(list) {
+        deck = list;
+        cur = 0;
+        document.getElementById('problem-screen').style.display = 'none';
+        document.getElementById('card-screen').style.display = 'block';
+        render();
+    }
+
+    function init() {
+        // 데이터 문법 오류: ③ 블록이 아예 실행되지 못한 경우
+        if (typeof cards === 'undefined') {
+            var items = window.__dataErrors.map(function (er) {
+                return { tag: er.line ? ('약 ' + er.line + '줄') : '오류', text: er.msg };
+            });
+            if (!items.length) items.push({ tag: '오류', text: 'cards를 찾을 수 없습니다. const cards = [ ... ]; 형태가 맞는지 확인하세요.' });
+            showProblemScreen({
+                title: '⚠️ 카드 데이터를 읽지 못했어요',
+                summary: '데이터 부분에 문법 오류가 있어서 프로그램이 멈췄습니다. 아래 줄 근처를 확인하세요.',
+                items: items,
+                tips: [
+                    '문장 안에 큰따옴표(")가 들어 있음 → 작은따옴표(\')로 바꾸기',
+                    '카드와 카드 사이 쉼표(,) 빠짐, 또는 맨 끝의 ]; 가 지워짐',
+                    '문장 한가운데에서 줄이 바뀜 (한 문장은 한 줄로)',
+                    '붙여넣은 글에 // 가 포함되어 뒷부분이 주석 처리됨'
+                ]
+            });
+            return;
+        }
+
+        var result = validateCards(cards);
+
+        if (result.errors.length === 0) {
+            startDeck(result.valid);
+            return;
+        }
+
+        var total = Array.isArray(cards) ? cards.length : 0;
+        var badCount = total - result.valid.length;
+        showProblemScreen({
+            title: '⚠️ 고칠 곳이 ' + result.errors.length + '군데 있어요',
+            summary: badCount > 0
+                ? '전체 ' + total + '장 중 ' + badCount + '장에 문제가 있습니다. 데이터를 고치고 새로고침하세요.'
+                : '카드 데이터를 확인하고 새로고침하세요.',
+            items: result.errors,
+            tips: ['카드마다 q(질문)와 a(정답)가 모두 있어야 하고, 둘 다 글자(따옴표로 감싼 문장)여야 합니다'],
+            buttonText: result.valid.length > 0 ? '오류 없는 ' + result.valid.length + '장만 먼저 보기' : null,
+            onButton: function () { startDeck(result.valid); }
+        });
+    }
+
+    /* ---------- 카드 표시 ---------- */
+    // 질문 앞의 ★(중요도)와 끝의 [출처]를 따로 떼어 작은 표식으로 보여줍니다.
+    function parseQuestion(raw) {
+        var text = raw.trim();
+        var stars = '';
+        var src = '';
+        var m = text.match(/^([★☆]{1,5})\s*/);
+        if (m) { stars = m[1]; text = text.slice(m[0].length); }
+        var s = text.match(/\s*\[([^\]]{1,120})\]\s*$/);
+        if (s) { src = s[1]; text = text.slice(0, s.index); }
+        if (!text.trim()) { text = raw.trim(); stars = ''; src = ''; }
+        return { stars: stars, src: src, text: text };
+    }
+
+    function render() {
+        var c = deck[cur];
+        var p = parseQuestion(c.q);
+
+        document.getElementById('question').textContent = p.text;
+        document.getElementById('answer').textContent = c.a.trim();
+        document.getElementById('source').textContent = p.src ? '출처: ' + p.src : '';
+
+        var starsEl = document.getElementById('stars');
+        if (p.stars) {
+            var filled = (p.stars.match(/★/g) || []).length;
+            starsEl.textContent = p.stars;
+            starsEl.setAttribute('aria-label', '중요도 ' + p.stars.length + '개 중 ' + filled + '개');
+            starsEl.style.display = 'inline-block';
+        } else {
+            starsEl.style.display = 'none';
+        }
+
+        document.getElementById('current').textContent = cur + 1;
+        document.getElementById('total').textContent = deck.length;
+        document.getElementById('bar').style.width = ((cur + 1) / deck.length * 100) + '%';
+    }
+
+    function flip() { cardEl.classList.toggle('flipped'); }
+
+    function go(delta) {
+        cur = (cur + delta + deck.length) % deck.length;
+        clearTimeout(swapTimer);
+        if (cardEl.classList.contains('flipped') && !reduceMotion()) {
+            // 먼저 카드를 앞면으로 돌리고, 옆면이 되어 안 보일 때 내용을 바꿔서 다음 정답이 미리 비치지 않게 함
+            cardEl.classList.remove('flipped');
+            swapTimer = setTimeout(render, 300);
+        } else {
+            cardEl.classList.remove('flipped');
+            render();
+        }
+    }
+    function nextCard() { go(1); }
+    function prevCard() { go(-1); }
+
+    cardEl.addEventListener('click', flip);
+
+    document.addEventListener('keydown', function (e) {
+        if (document.getElementById('card-screen').style.display === 'none') return;
+        if (e.key === 'ArrowRight') { nextCard(); }
+        else if (e.key === 'ArrowLeft') { prevCard(); }
+        else if ((e.key === ' ' || e.key === 'Enter') && e.target.tagName !== 'BUTTON') { e.preventDefault(); flip(); }
+    });
+
+    // 스마트폰: 좌우로 밀어서 넘기기
+    var touchX = null, touchY = null;
+    cardEl.addEventListener('touchstart', function (e) {
+        touchX = e.touches[0].clientX;
+        touchY = e.touches[0].clientY;
+    }, { passive: true });
+    cardEl.addEventListener('touchend', function (e) {
+        if (touchX === null) return;
+        var dx = e.changedTouches[0].clientX - touchX;
+        var dy = e.changedTouches[0].clientY - touchY;
+        touchX = null;
+        if (Math.abs(dx) > 60 && Math.abs(dy) < 50) {
+            if (dx < 0) nextCard(); else prevCard();
+        }
+    }, { passive: true });
+
+    init();
+</script>
+</body>
+</html>
